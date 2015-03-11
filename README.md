@@ -39,7 +39,7 @@ Once you have added the file to your project working tree, and made sure that CM
 INCLUDE(pandocology)
 ~~~
 
-## Usage
+## Basic Usage
 
 The primary command offered by "Pandocology" is "`add_pandoc_document()`".
 
@@ -56,6 +56,8 @@ add_pandoc_document(
 )
 ~~~
 
+## Passing Directives to "`pandoc`"
+
 You have access to the full complexity of the Pandoc compiler through the "`PANDOC_DIRECTIVES`" argument, which will pass everything to the underlying "`pandoc`" program. So, for example, to generate a PDF with some custom options:
 
 ~~~
@@ -69,4 +71,30 @@ add_pandoc_document(
                       --listings
 )
 ~~~
+
+## Including Static Resources
+
+In many cases your inputs are going to be more than just the primary source document: images, CSS stylesheets, BibTeX bibliography database files, stylesheets, templates etc.
+All these secondary files or inputs that are not the primary input to the "`pandoc`" program but are required to compile the main document are known as "*resources*".
+
+These resources can be specified on a file-by-file basis using the "`RESOURCE_FILES`" argument and on a directory-by-directory basis using the "`RESOURCE_DIRS`" argument:
+
+~~~
+add_pandoc_document(
+    opus.pdf
+    SOURCES opus.md
+    RESOURCE_FILES references.bib custom.template.latex journal.csl
+    RESOURCE_DIRS  figures/ maps/
+    PANDOC_DIRECTIVES -t latex
+                      --smart
+                      --self-contained
+                      --toc
+                      --listings
+                      --template     custom.template.latex
+                      --filter       pandoc-citeproc
+                      --csl          journal.csl
+                      --bibliography references.bib
+)
+~~~
+
 
