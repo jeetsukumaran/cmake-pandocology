@@ -183,11 +183,12 @@ function(add_pandoc_document target_name)
 
     ## copy resources
     if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
+        get_filename_component(stemname ${target_name} NAME_WE)
         add_custom_command(
             TARGET ${target_name} POST_BUILD
             DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
             # COMMAND cp ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS} ${product_directory}
-            COMMAND ${CMAKE_COMMAND} -E tar cvjf ${product_directory}/${target_name}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+            COMMAND ${CMAKE_COMMAND} -E tar cvjf ${product_directory}/${stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
             )
     endif()
 
