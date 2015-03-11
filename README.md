@@ -123,10 +123,10 @@ add_pandoc_document(
     )
 
 add_pandoc_document(
-    opus.tex
+    opus.pdf
     SOURCES             opus.md
-    RESOURCE_FILES      opus.bib systbiol.template.latex systematic-biology.csl
-    RESOURCE_DIRS       figs
+    RESOURCE_FILES      references.bib custom.template.latex journal.csl
+    RESOURCE_DIRS       figures/ maps/
     PANDOC_DIRECTIVES   -t             latex
                         --smart
                         --listings
@@ -134,15 +134,20 @@ add_pandoc_document(
                         --filter       pandoc-citeproc
                         --csl          journal.csl
                         --bibliography references.bib
-                        --include-after-body=figures.tex
+                        --include-after-body=appendices.tex
     DEPENDS             appendices.tex
-    NO_EXPORT_PRODUCT
-    EXPORT_RESOURCES
-    EXPORT_PDF
     )
 ~~~
 
-The first instructions asks Pandocology to build the LaTeX document "`appendices.tex`" from the (Markdown) source, "`appendices.md`", making to sure include the files in the subdirectory, "`appendix-figs`".
-The argument "`NO_EXPORT_PRODUCT`" tells Pandocology that while we want the fine "`appendices.tex`" built, but *not* exported to the final output directory (i.e., "`product`" or as specified by the "`PRODUCT_DIRECTORY`" argument).
+The first instruction asks Pandocology to build the LaTeX document "`appendices.tex`" from the (Markdown) source, "`appendices.md`", making to sure include the files in the subdirectory, "`appendix-figs`".
+The argument "`NO_EXPORT_PRODUCT`" tells Pandocology that while we want the file "`appendices.tex`" built, but *not* exported to the final output directory (i.e., "`product`" or as specified by the "`PRODUCT_DIRECTORY`" argument).
 Pandocology makes sure that all build products are built in the current binary source directory so that they are available to other builds within the project, and only copies the final result to the output/product directory.
 By specifying "`NO_EXPORT_PRODUCT`", we are suppressing the final step, and thus we have the file, "`appendices.tex`" available in the source directory to be pulled in by the build for "`opus.tex`", but not exported to the final product directory where it will just be noise.
+
+The second instruction builds the primary output that we are interested in, i.e., "`opus.pdf`", from the (Markdown) source "`opus.md`".
+Note how we specify the "`--include-after-body=appendices.tex`" argument to "`pandoc`", to make sure the Pandoc compiler pulls in the generated TeX file into the main document.
+In addition, we also list "`appendices.tex`" as a dependency using the "`DEPENDS`" argument.
+This results in Pandocology informing the CMake build system that "`appendices.tex`" will be used in the building of "`opus.pdf`".
+This is how we make sure that built or generated resources are available in the right place at the right time (as opposed to the "`RESOURCE_FILES`" and "`RESOURCE_DIRS`" arguments, which make sure that *static* resources get to the right places at the right time).
+Of course, as before, we make sure to specify all the static resources that this document needs (e.g. the bibliography file, the templates, the images in the "`figures/`" and "`maps/`" subdirectories).
+
