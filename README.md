@@ -43,7 +43,7 @@ INCLUDE(pandocology)
 
 The primary command offered by "Pandocology" is "`add_pandoc_document()`".
 
-This command takes, at a mininum, two arguments: a *target name*, which specifies the output file (and, by inspection of the extension, the output file format), and at least one source file.
+This command takes, at a mininum, two arguments: a *target name*, which specifies the output file (and, by inspection of the extension, the output file format), and at least one source file specifed by the "`SOURCES`" argument.
 So, for example, if you had a Markdown format input file (say, "`opus.md`") that you wanted to convert to Rich Text Format, then the following is a minimal "`CMakeLists.txt`" to do that.
 
 ~~~
@@ -56,17 +56,17 @@ add_pandoc_document(
 )
 ~~~
 
-You have access to the full complexity of the Pandoc compiler through the "`PANDOC_DIRECTIVES`" argument, which will pass everything to the underlying "`pandoc`" program:
+You have access to the full complexity of the Pandoc compiler through the "`PANDOC_DIRECTIVES`" argument, which will pass everything to the underlying "`pandoc`" program. So, for example, to generate a PDF with some custom options:
 
 ~~~
 add_pandoc_document(
     opus.pdf
     SOURCES opus.md
-    PANDOC_DIRECTIVES    -t             latex
-                         --smart
-                         --self-contained
-                         --toc
-                         --listings
+    PANDOC_DIRECTIVES -t latex
+                      --smart
+                      --self-contained
+                      --toc
+                      --listings
 )
 ~~~
 
