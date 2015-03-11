@@ -56,6 +56,16 @@ add_pandoc_document(
 )
 ~~~
 
+Once the project is built, the result "`opus.rtf`" will end up in the "`product`" subdirectory of the build directory.
+You can change the output directory by using the "`PRODUCT_DIRECTORY`" argument:
+~~~
+add_pandoc_document(
+    opus.rtf
+    SOURCES opus.md
+    PRODUCT_DIRECTORY opus_output_directory
+)
+~~~
+
 ## Passing Directives to "`pandoc`"
 
 You have access to the full complexity of the Pandoc compiler through the "`PANDOC_DIRECTIVES`" argument, which will pass everything to the underlying "`pandoc`" program. So, for example, to generate a PDF with some custom options:
@@ -77,7 +87,7 @@ add_pandoc_document(
 In many cases your inputs are going to be more than just the primary source document: images, CSS stylesheets, BibTeX bibliography database files, stylesheets, templates etc.
 All these secondary files or inputs that are not the primary input to the "`pandoc`" program but are required to compile the main document are known as "*resources*".
 
-These resources can be specified on a file-by-file basis using the "`RESOURCE_FILES`" argument and on a directory-by-directory basis using the "`RESOURCE_DIRS`" argument:
+These resources can be specified on a file-by-file basis using the "`RESOURCE_FILES`" argument and on a directory-by-directory basis using the "`RESOURCE_DIRS`" argument (note that all paths are relative to the current source directory):
 
 ~~~
 add_pandoc_document(
@@ -97,4 +107,42 @@ add_pandoc_document(
 )
 ~~~
 
+## Including Content After the Reference Section
 
+One quirk of "`pandoc`" is that the bibliography/reference section is necessarily the last part of the main document body: you cannot (easily and organically) have any sections, such as an appendix, after the reference section.
+The work-around is to create these post-reference sections as a separate document, independentally process them using "`pandoc`", and then use the "`--include-after-body`" directive to include them in the main document.
+
+You can support this workflow using "Pandocology" as follows:
+~~~
+add_pandoc_document(
+    appendices.tex
+    SOURCES              appendices.md
+    RESOURCE_DIRS        appendix-figs
+    PANDOC_DIRECTIVES    -t latex
+    NO_EXPORT_PRODUCT
+    )
+
+add_pandoc_document(
+    opus.tex
+    SOURCES             opus.md
+    RESOURCE_FILES      opus.bib systbiol.template.latex systematic-biology.csl
+    RESOURCE_DIRS       figs
+    PANDOC_DIRECTIVES   -t             latex
+                        --smart
+                        --listings
+                        --template     custom.template.latex
+                        --filter       pandoc-citeproc
+                        --csl          journal.csl
+                        --bibliography references.bib
+                        --include-after-body=figures.tex
+    DEPENDS             appendices.tex
+    NO_EXPORT_PRODUCT
+    EXPORT_RESOURCES
+    EXPORT_PDF
+    )
+~~~
+
+The first instructions asks Pandocology to build the LaTeX document "`appendices.tex`" from the (Markdown) source, "`appendices.md`", making to sure include the files in the subdirectory, "`appendix-figs`".
+The argument "`NO_EXPORT_PRODUCT`" tells Pandocology that while we want the fine "`appendices.tex`" built, but *not* exported to the final output directory (i.e., "`product`" or as specified by the "`PRODUCT_DIRECTORY`" argument).
+Pandocology makes sure that all build products are built in the current binary source directory so that they are available to other builds within the project, and only copies the final result to the output/product directory.
+By specifying "`NO_EXPORT_PRODUCT`", we are suppressing the final step, and thus we have the file, "`appendices.tex`" available in the source directory to be pulled in by the build for "`opus.tex`", but not exported to the final product directory where it will just be noise.
