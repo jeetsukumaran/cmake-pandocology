@@ -165,7 +165,8 @@ function(add_pandoc_document target_name)
         add_custom_command(
             TARGET ${target_name} POST_BUILD
             DEPENDS ${target_name} ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
-            COMMAND latexmk --pdf ${target_name}
+            # COMMAND ${PANDOC_EXECUTABLE} ${target_name} -f latex -o ${stemname}.pdf
+            COMMAND latexmk -quiet -interaction=nonstopmode -pdf ${target_name}
             # COMMAND pdflatex ${target_name}
             # COMMAND pdflatex ${target_name}
             COMMAND ${CMAKE_COMMAND} -E copy ${stemname}.pdf ${product_directory}
