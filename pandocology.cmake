@@ -1,7 +1,7 @@
 ################################################################################
 ##
-##  File: UsePandoc.cmake
-##  CMAKE commands to run Pandoc
+##  Provide Pandoc compilation support for the CMake build system
+##
 ##  Version: 0.0.1
 ##  Author: Jeet Sukumatan (jeetsukumaran@gmail.com)
 ##
