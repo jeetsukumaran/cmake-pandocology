@@ -208,7 +208,7 @@ add_pandoc_document(
 
 ## Generating Both a PDF and the TeX, and Creating an Archive Bundle for Submission
 
-Many journal require that you submit both a PDF as well as a TeX source, and, in the latter, may require that all source files needed to TeX the source are also included.
+Many journals require that you submit both a PDF as well as a TeX source, and, in the latter, may require that all source files needed to TeX the source are also included.
 The way to do this using Pandocology is to:
 
 (a) Specify that the primary output is LaTeX that you want an archive exported that bundles the LaTeX file plus all the resources and dependencies by using the "`EXPORT_ARCHIVE`" argument.
@@ -218,26 +218,27 @@ The way to do this using Pandocology is to:
 
 ~~~
 add_pandoc_document(
-    figures.tex
-    SOURCES              figures.md
-    RESOURCE_DIRS        figs
+    appendices.tex
+    SOURCES              appendices.md
+    RESOURCE_DIRS        appendix-figs
     PANDOC_DIRECTIVES    -t latex
     NO_EXPORT_PRODUCT
     )
 
 add_pandoc_document(
-    archipelago-model.tex
-    SOURCES              archipelago-model.md
-    RESOURCE_FILES       archipelago-model.bib systbiol.template.latex systematic-biology.csl
+    opus.tex
+    SOURCES              opus.md
+    RESOURCE_FILES       references.bib custom.template.latex journal.csl
     RESOURCE_DIRS        figs
     PANDOC_DIRECTIVES    -t             latex
-                         --smart
-                         --template     systbiol.template.latex
-                         --filter       pandoc-citeproc
-                         --csl          systematic-biology.csl
-                         --bibliography archipelago-model.bib
-                         --include-after-body=figures.tex
-    DEPENDS             figures.tex
+                        --smart
+                        --listings
+                        --template     custom.template.latex
+                        --filter       pandoc-citeproc
+                        --csl          journal.csl
+                        --bibliography references.bib
+                        --include-after-body=appendices.tex
+    DEPENDS             appendices.tex
     NO_EXPORT_PRODUCT
     EXPORT_ARCHIVE
     EXPORT_PDF
