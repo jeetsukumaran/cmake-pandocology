@@ -191,10 +191,17 @@ function(add_pandoc_document target_name)
         add_custom_command(
             TARGET ${target_name} POST_BUILD
             DEPENDS ${target_name} ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+
+            # Does not work: custom template used to generate tex is ignored
             # COMMAND ${PANDOC_EXECUTABLE} ${target_name} -f latex -o ${stemname}.pdf
-            COMMAND latexmk -quiet -interaction=nonstopmode -pdf ${target_name}
-            # COMMAND pdflatex ${target_name}
-            # COMMAND pdflatex ${target_name}
+
+            # Apparently, both nonstopmode and batchmode produce an output file
+            # even if there was an error. This tricks latexmk into believing
+            # the file is actually up-to-date.
+            # So we use `-halt-on-error` or `-interaction=errorstopmode` instead.
+            # COMMAND latexmk -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>&1 | grep -A4 'LaTeX Error'
+            COMMAND latexmk -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>&1 | grep -A8 ".*:[0-9]*:.*"
+
             COMMAND ${CMAKE_COMMAND} -E copy ${stemname}.pdf ${product_directory}
             )
         add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${stemname}.pdf)
