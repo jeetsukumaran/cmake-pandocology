@@ -211,9 +211,9 @@ add_pandoc_document(
 Many journals require that you submit both a PDF as well as a TeX source, and, in the latter, may require that all source files needed to TeX the source are also included.
 The way to do this using Pandocology is to:
 
-(a) Specify that the primary output is LaTeX that you want an archive exported that bundles the LaTeX file plus all the resources and dependencies by using the "`EXPORT_ARCHIVE`" argument.
-(b) Specify that you want the primary output to be post-processed into a PDF using the "`EXPORT_PDF`" argument.
-(c) Suppress the creation of the primary LaTeX output (since it is already in the archive bundle) by using the "`NO_EXPORT_PRODUCT`" argument.
+1. Specify that the primary output is LaTeX that you want an archive exported that bundles the LaTeX file plus all the resources and dependencies by using the "`EXPORT_ARCHIVE`" argument.
+1. Specify that you want the primary output to be post-processed into a PDF using the "`EXPORT_PDF`" argument.
+1. Suppress the creation of the primary LaTeX output (since it is already in the archive bundle) by using the "`NO_EXPORT_PRODUCT`" argument.
 
 
 ~~~
