@@ -112,7 +112,7 @@ add_pandoc_document(
 One quirk of "`pandoc`" is that the bibliography/reference section is necessarily the last part of the main document body: you cannot (easily and organically) have any sections, such as an appendix, after the reference section.
 The work-around is to create these post-reference sections as a separate document, independentally process them using "`pandoc`", and then use the "`--include-after-body`" directive to include them in the main document.
 
-You can support this workflow using "Pandocology" as follows:
+You can support this workflow using Pandocology as follows:
 ~~~
 add_pandoc_document(
     appendices.tex
@@ -150,4 +150,100 @@ In addition, we also list "`appendices.tex`" as a dependency using the "`DEPENDS
 This results in Pandocology informing the CMake build system that "`appendices.tex`" will be used in the building of "`opus.pdf`".
 This is how we make sure that built or generated resources are available in the right place at the right time (as opposed to the "`RESOURCE_FILES`" and "`RESOURCE_DIRS`" arguments, which make sure that *static* resources get to the right places at the right time).
 Of course, as before, we make sure to specify all the static resources that this document needs (e.g. the bibliography file, the templates, the images in the "`figures/`" and "`maps/`" subdirectories).
+
+## Creating an Archive Bundle for Submission
+
+With some output formats that are themselves source formats requiring further processing (e.g., LaTeX), you may want to create an self-contained archive that includes not only the output document, but also additional resources that the output document may need for further processing.
+You can do this by specifying the "`EXPORT_ARCHIVE`" flag, which will create a compressed archive of the final file *as well as* all the static resource files, the static resource directories, *and* the generated resource dependencies:
+
+~~~
+add_pandoc_document(
+    appendices.tex
+    SOURCES              appendices.md
+    RESOURCE_DIRS        appendix-figs
+    PANDOC_DIRECTIVES    -t latex
+    NO_EXPORT_PRODUCT
+    )
+
+add_pandoc_document(
+    opus.tex
+    SOURCES             opus.md
+    RESOURCE_FILES      references.bib custom.template.latex journal.csl
+    RESOURCE_DIRS       figures/ maps/
+    PANDOC_DIRECTIVES   -t             latex
+                        --smart
+                        --listings
+                        --template     custom.template.latex
+                        --filter       pandoc-citeproc
+                        --csl          journal.csl
+                        --bibliography references.bib
+                        --include-after-body=appendices.tex
+    DEPENDS             appendices.tex
+    EXPORT_ARCHIVE
+    )
+~~~
+
+In the above case, once run, the output directory will not only have the primary Pandoc-compilation output, "`opus.tex`", but also a BZIP-compressed and TAR'd archive, "`opus.tbz`", which includes the file "`opus.tex`" *and* all the resources specified by the "`RESOURCE_FILES`" and "`RESOURCE_DIRS`" arguments, as well as the  resources specified in by the "`DEPENDS`" argument.
+
+If you want *just* the archive (which include the primary product, i.e., "`opus.tex`" in the example above), and not the primary file to be created in the output directory, then specify "`EXPORT_ARCHIVE`" and "`NO_EXPORT_PRODUCT`" together. The former creates the archive and the latter suppresses the creation of a separate (and perhaps, for your purposes, redundant) output.
+~~~
+add_pandoc_document(
+    opus.tex
+    SOURCES             opus.md
+    RESOURCE_FILES      references.bib custom.template.latex journal.csl
+    RESOURCE_DIRS       figures/ maps/
+    PANDOC_DIRECTIVES   -t             latex
+                        --smart
+                        --listings
+                        --template     custom.template.latex
+                        --filter       pandoc-citeproc
+                        --csl          journal.csl
+                        --bibliography references.bib
+                        --include-after-body=appendices.tex
+    DEPENDS             appendices.tex
+    NO_EXPORT_PRODUCT
+    EXPORT_ARCHIVE
+    )
+~~~
+
+## Generating Both a PDF and the TeX, and Creating an Archive Bundle for Submission
+
+Many journal require that you submit both a PDF as well as a TeX source, and, in the latter, may require that all source files needed to TeX the source are also included.
+The way to do this using Pandocology is to:
+
+(a) Specify that the primary output is LaTeX that you want an archive exported that bundles the LaTeX file plus all the resources and dependencies by using the "`EXPORT_ARCHIVE`" argument.
+(b) Specify that you want the primary output to be post-processed into a PDF using the "`EXPORT_PDF`" argument.
+(c) Suppress the creation of the primary LaTeX output (since it is already in the archive bundle) by using the "`NO_EXPORT_PRODUCT`" argument.
+
+
+~~~
+add_pandoc_document(
+    figures.tex
+    SOURCES              figures.md
+    RESOURCE_DIRS        figs
+    PANDOC_DIRECTIVES    -t latex
+    NO_EXPORT_PRODUCT
+    )
+
+add_pandoc_document(
+    archipelago-model.tex
+    SOURCES              archipelago-model.md
+    RESOURCE_FILES       archipelago-model.bib systbiol.template.latex systematic-biology.csl
+    RESOURCE_DIRS        figs
+    PANDOC_DIRECTIVES    -t             latex
+                         --smart
+                         --template     systbiol.template.latex
+                         --filter       pandoc-citeproc
+                         --csl          systematic-biology.csl
+                         --bibliography archipelago-model.bib
+                         --include-after-body=figures.tex
+    DEPENDS             figures.tex
+    NO_EXPORT_PRODUCT
+    EXPORT_ARCHIVE
+    EXPORT_PDF
+    )
+~~~
+
+If the above is run, the output directory will have two files: "`opus.pdf`" and "`opus.tbz`".
+The former is the PDF of the document while the latter is the LaTeX file plus all resources needed to generate the PDF.
 

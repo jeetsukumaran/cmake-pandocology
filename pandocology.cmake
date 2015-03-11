@@ -102,11 +102,11 @@ endfunction()
 #                             --bibliography archipelago-model.bib
 #                             --include-after-body=figures.tex
 #         DEPENDS             figures.tex
-#         EXPORT_RESOURCES
+#         EXPORT_ARCHIVE
 #         )
 #
 function(add_pandoc_document target_name)
-    set(options          EXPORT_RESOURCES NO_EXPORT_PRODUCT EXPORT_PDF)
+    set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF)
     set(oneValueArgs     PRODUCT_DIRECTORY)
     set(multiValueArgs   SOURCES RESOURCE_FILES RESOURCE_DIRS PANDOC_DIRECTIVES DEPENDS)
     cmake_parse_arguments(ADD_PANDOC_DOCUMENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -134,7 +134,7 @@ function(add_pandoc_document target_name)
     set(exported_resources)
     foreach(resource_dir ${ADD_PANDOC_DOCUMENT_RESOURCE_DIRS})
         usepandoc_add_input_dir(${CMAKE_CURRENT_SOURCE_DIR}/${resource_dir} ${CMAKE_CURRENT_BINARY_DIR} build_resources)
-        if (${ADD_PANDOC_DOCUMENT_EXPORT_RESOURCES})
+        if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
             usepandoc_add_input_dir(${CMAKE_CURRENT_SOURCE_DIR}/${resource_dir} ${product_directory} exported_resources)
         endif()
     endforeach()
@@ -182,7 +182,7 @@ function(add_pandoc_document target_name)
     endif()
 
     ## copy resources
-    if (${ADD_PANDOC_DOCUMENT_EXPORT_RESOURCES})
+    if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
         add_custom_command(
             TARGET ${target_name} POST_BUILD
             DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
