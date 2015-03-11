@@ -74,6 +74,11 @@ function(usepandoc_add_input_dir source_dir dest_parent_dir dest_filelist_var)
     set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
 endfunction()
 
+function(add_to_make_clean filepath)
+    get_directory_property(make_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_files};${filepath}")
+endfunction()
+
 # This builds a document
 #
 # Usage:
@@ -149,6 +154,7 @@ function(add_pandoc_document target_name)
         # we produce the target in the source directory, in case other build targets require it as a source
         COMMAND ${PANDOC_EXECUTABLE} ${build_sources} ${ADD_PANDOC_DOCUMENT_PANDOC_DIRECTIVES} -o ${target_name}
         )
+    add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_name})
 
     ## primary target
     # # target cannot have same (absolute name) as dependencies:
@@ -171,6 +177,8 @@ function(add_pandoc_document target_name)
             # COMMAND pdflatex ${target_name}
             COMMAND ${CMAKE_COMMAND} -E copy ${stemname}.pdf ${product_directory}
             )
+        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${stemname}.pdf)
+        add_to_make_clean(${product_directory}/${stemname}.pdf)
     endif()
 
     ## copy products
@@ -180,6 +188,7 @@ function(add_pandoc_document target_name)
             DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
             COMMAND ${CMAKE_COMMAND} -E copy ${target_name} ${product_directory}
             )
+        add_to_make_clean(${product_directory}/${target_name})
     endif()
 
     ## copy resources
@@ -191,6 +200,7 @@ function(add_pandoc_document target_name)
             # COMMAND cp ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS} ${product_directory}
             COMMAND ${CMAKE_COMMAND} -E tar cvjf ${product_directory}/${stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
             )
+        add_to_make_clean(${product_directory}/${stemname}.tbz)
     endif()
 
     # if (${ADD_PANDOC_DOCUMENT_CREATE_SOURCE_ARCHIVE})
