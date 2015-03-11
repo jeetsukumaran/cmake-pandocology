@@ -1,4 +1,3 @@
-
 # PANDOCOLOGY
 
 "Pandocology" is a [CMake](http://www.cmake.org/) module that allows you to generate documents using [pandoc](http://johnmacfarlane.net/pandoc/).
@@ -16,12 +15,20 @@ project/
     src/
 ~~~
 
-you would place this file "`pandocology.cmake` in "`project/cmake/Modules`".
-
-Alternatively, if you wish to place the file elsewhere, you have to make sure that you update the CMake module path by placing a line like the following in your "`CMakeLists.txt`":
+you might place this file "`pandocology.cmake` in "`project/cmake/Modules`", and then add a line like the following either in the top-level "`CMakeLists.txt`" or any other "`CMakeLists.txt`" processed before the commands provided by "Pandocology" are needed:
 
 ~~~
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "path/to/pandocology/dir")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 ~~~
 
-For example, in my own case, I have cloned this entire repository as a submodule of my project module:
+In my own case, I have cloned this entire repository as a submodule of my project module:
+~~~
+$ cd cmake/Modules
+$ git submodule add https://github.com/jeetsukumaran/cmake-pandocology.git
+~~~
+
+And I added the following line to my top-level "`CMakeLists.txt`":
+
+~~~
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/cmake-pandocology")
+~~~
