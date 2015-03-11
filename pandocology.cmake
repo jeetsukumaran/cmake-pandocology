@@ -195,12 +195,24 @@ function(add_pandoc_document target_name)
             # Does not work: custom template used to generate tex is ignored
             # COMMAND ${PANDOC_EXECUTABLE} ${target_name} -f latex -o ${stemname}.pdf
 
-            # Apparently, both nonstopmode and batchmode produce an output file
-            # even if there was an error. This tricks latexmk into believing
-            # the file is actually up-to-date.
-            # So we use `-halt-on-error` or `-interaction=errorstopmode` instead.
-            # COMMAND latexmk -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>&1 | grep -A4 'LaTeX Error'
-            COMMAND latexmk -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>&1 | grep -A8 ".*:[0-9]*:.*"
+            # (1)   Apparently, both nonstopmode and batchmode produce an output file
+            #       even if there was an error. This tricks latexmk into believing
+            #       the file is actually up-to-date.
+            #       So we use `-halt-on-error` or `-interaction=errorstopmode`
+            #       instead.
+            # (2)   `grep` returns a non-zero error code if the pattern is not
+            #       found. So, in our scheme below to filter the output of
+            #       `pdflatex`, it is precisely when there is NO error that
+            #       grep returns a non-zero code, which fools CMake into thinking
+            #       tex'ing failed.
+            #       Hence the need for `| grep ...| cat` or `| grep  || true`.
+            #       But we can go better:
+            #           latexmk .. || (grep .. && false)
+            #       So we can have our cake and eat it too: here we want to
+            #       re-raise the error after a successful grep if there was an
+            #       error in `latexmk`.
+            # COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>&1 | grep -A8 ".*:[0-9]*:.*" || true
+            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>/dev/null >/dev/null || (grep -A8 ".*:[0-9]*:.*" ${stemname}.log && false)
 
             COMMAND ${CMAKE_COMMAND} -E copy ${stemname}.pdf ${product_directory}
             )
