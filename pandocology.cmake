@@ -35,7 +35,7 @@ if(NOT EXISTS ${PANDOC_EXECUTABLE})
 endif()
 
 ###############################################################################
-# Based on UseLATEX:LATEX_COPY_INPUT_FILE
+# Based on code from UseLATEX
 # Author: Kenneth Moreland <kmorel@sandia.gov>
 # Copyright 2004 Sandia Corporation.
 # Under the terms of Contract DE-AC04-94AL85000, there is a non-exclusive
@@ -43,6 +43,10 @@ endif()
 # U.S. Government. Redistribution and use in source and binary forms, with
 # or without modification, are permitted provided that this Notice and any
 # statement of authorship are reproduced on all copies.
+
+# Adds command to copy file from the source directory to the destination
+# directory: used to move source files from source directory into build
+# directory before main build
 function(pandocology_add_input_file source_path dest_dir dest_filelist_var)
     set(dest_filelist)
     get_filename_component(filename ${source_path} NAME)
@@ -56,6 +60,8 @@ function(pandocology_add_input_file source_path dest_dir dest_filelist_var)
     set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
 endfunction()
 
+# A version of GET_FILENAME_COMPONENT that treats extensions after the last
+# period rather than the first.
 function(pandocology_get_file_stemname varname filename)
     SET(result)
     GET_FILENAME_COMPONENT(name ${filename} NAME)
