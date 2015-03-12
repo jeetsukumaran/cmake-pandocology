@@ -242,7 +242,7 @@ function(add_pandoc_document target_name)
             #       re-raise the error after a successful grep if there was an
             #       error in `latexmk`.
             # COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>&1 | grep -A8 ".*:[0-9]*:.*" || true
-            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>/dev/null >/dev/null || (grep -A8 ".*:[0-9]*:.*" ${stemname}.log && false)
+            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${stemname}.log && false)
 
             COMMAND ${CMAKE_COMMAND} -E copy ${stemname}.pdf ${product_directory}
             )
