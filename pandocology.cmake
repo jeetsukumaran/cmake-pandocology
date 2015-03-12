@@ -57,6 +57,13 @@ function(usepandoc_add_input_file source_path dest_dir dest_filelist_var)
 endfunction()
 ###############################################################################
 
+function(pandocology_get_file_stemname varname filename)
+    SET(result)
+    GET_FILENAME_COMPONENT(name ${filename} NAME)
+    STRING(REGEX REPLACE "\\.[^.]*\$" "" result "${name}")
+    SET(${varname} "${result}" PARENT_SCOPE)
+endfunction()
+
 function(usepandoc_add_input_dir source_dir dest_parent_dir dest_filelist_var)
     set(dest_filelist)
     get_filename_component(dir_name ${source_dir} NAME)
@@ -187,7 +194,8 @@ function(add_pandoc_document target_name)
 
     # run post-pdf
     if (${ADD_PANDOC_DOCUMENT_EXPORT_PDF})
-        get_filename_component(stemname ${target_name} NAME_WE)
+        # get_filename_component(stemname ${target_name} NAME_WE)
+        pandocology_get_file_stemname(stemname ${target_name})
         add_custom_command(
             TARGET ${target_name} POST_BUILD
             DEPENDS ${target_name} ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
@@ -232,7 +240,8 @@ function(add_pandoc_document target_name)
 
     ## copy resources
     if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
-        get_filename_component(stemname ${target_name} NAME_WE)
+        # get_filename_component(stemname ${target_name} NAME_WE)
+        pandocology_get_file_stemname(stemname ${target_name})
         add_custom_command(
             TARGET ${target_name} POST_BUILD
             DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
