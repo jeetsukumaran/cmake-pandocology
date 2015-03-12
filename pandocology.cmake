@@ -51,10 +51,11 @@ function(pandocology_add_input_file source_path dest_dir dest_filelist_var)
     set(dest_filelist)
     get_filename_component(filename ${source_path} NAME)
     get_filename_component(absolute_dest_path ${dest_dir}/${filename} ABSOLUTE)
+    file(RELATIVE_PATH relative_dest_path ${CMAKE_CURRENT_BINARY_DIR} ${absolute_dest_path})
     list(APPEND dest_filelist ${absolute_dest_path})
     ADD_CUSTOM_COMMAND(
-        OUTPUT ${absolute_dest_path}
-        COMMAND ${CMAKE_COMMAND} -E copy ${source_path} ${absolute_dest_path}
+        OUTPUT ${relative_dest_path}
+        COMMAND ${CMAKE_COMMAND} -E copy ${source_path} ${dest_dir}/${filename}
         DEPENDS ${source_path}
         )
     set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
@@ -81,8 +82,9 @@ function(pandocology_add_input_dir source_dir dest_parent_dir dest_filelist_var)
     set(dest_filelist)
     get_filename_component(dir_name ${source_dir} NAME)
     get_filename_component(absolute_dest_dir ${dest_parent_dir}/${dir_name} ABSOLUTE)
+    file(RELATIVE_PATH relative_dest_dir ${CMAKE_CURRENT_BINARY_DIR} ${absolute_dest_dir})
     add_custom_command(
-        OUTPUT ${absolute_dest_dir}
+        OUTPUT ${relative_dest_dir}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${absolute_dest_dir}
         DEPENDS ${source_dir}
         )
