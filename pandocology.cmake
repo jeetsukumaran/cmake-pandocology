@@ -149,12 +149,15 @@ function(add_pandoc_document target_name)
     # this is because `make clean` will dangerously clean up source files
     disable_insource_build()
 
+    # get the stem of the target name
+    pandocology_get_file_stemname(stemname ${target_name})
+
     ## set up output directory
     if ("${ADD_PANDOC_DOCUMENT_PRODUCT_DIRECTORY}" STREQUAL "")
         set(ADD_PANDOC_DOCUMENT_PRODUCT_DIRECTORY "product")
     endif()
     get_filename_component(product_directory ${CMAKE_BINARY_DIR}/${ADD_PANDOC_DOCUMENT_PRODUCT_DIRECTORY} ABSOLUTE)
-    get_filename_component(absolute_product_path ${product_directory}/${target_name} ABSOLUTE)
+    # get_filename_component(absolute_product_path ${product_directory}/${target_name} ABSOLUTE)
 
     ## get primary source
     set(build_sources)
@@ -179,15 +182,29 @@ function(add_pandoc_document target_name)
 
     ## primary command
     add_custom_command(
-        OUTPUT  ${absolute_product_path}
+        OUTPUT  ${target_name} # note that this is in the build directory
         DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
         # WORKING_DIRECTORY ${working_directory}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
-        # COMMAND ${PANDOC_EXECUTABLE} ${build_sources} ${ADD_PANDOC_DOCUMENT_PANDOC_DIRECTIVES} -o ${absolute_product_path}
         # we produce the target in the source directory, in case other build targets require it as a source
         COMMAND ${PANDOC_EXECUTABLE} ${build_sources} ${ADD_PANDOC_DOCUMENT_PANDOC_DIRECTIVES} -o ${target_name}
         )
     add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_name})
+
+    ## figure out what all is going to be produced by this build set, and set
+    ## those as dependencies of the primary target
+    set(primary_target_dependencies)
+    set(primary_target_dependencies ${primary_target_dependencies} ${CMAKE_CURRENT_BINARY_DIR}/${target_name})
+    if (NOT ${ADD_PANDOC_DOCUMENT_NO_EXPORT_PRODUCT})
+        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${target_name})
+    endif()
+    if (${ADD_PANDOC_DOCUMENT_EXPORT_PDF})
+        set(primary_target_dependencies ${primary_target_dependencies} ${CMAKE_CURRENT_BINARY_DIR}/${stemname}.pdf)
+        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${stemname}.pdf)
+    endif()
+    if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
+        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${stemname}.tbz)
+    endif()
 
     ## primary target
     # # target cannot have same (absolute name) as dependencies:
@@ -195,15 +212,14 @@ function(add_pandoc_document target_name)
     add_custom_target(
         ${target_name}
         ALL
-        DEPENDS ${absolute_product_path} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+        DEPENDS ${primary_target_dependencies} ${ADD_PANDOC_DOCUMENT_DEPENDS}
         )
 
     # run post-pdf
     if (${ADD_PANDOC_DOCUMENT_EXPORT_PDF})
         # get_filename_component(stemname ${target_name} NAME_WE)
-        pandocology_get_file_stemname(stemname ${target_name})
         add_custom_command(
-            TARGET ${target_name} POST_BUILD
+            OUTPUT ${product_directory}/${stemname}.pdf ${CMAKE_CURRENT_BINARY_DIR}/${stemname}.pdf
             DEPENDS ${target_name} ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
 
             # Does not work: custom template used to generate tex is ignored
@@ -237,7 +253,7 @@ function(add_pandoc_document target_name)
     ## copy products
     if (NOT ${ADD_PANDOC_DOCUMENT_NO_EXPORT_PRODUCT})
         add_custom_command(
-            TARGET ${target_name} POST_BUILD
+            OUTPUT ${product_directory}/${target_name}
             DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
             COMMAND ${CMAKE_COMMAND} -E copy ${target_name} ${product_directory}
             )
@@ -247,30 +263,25 @@ function(add_pandoc_document target_name)
     ## copy resources
     if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
         # get_filename_component(stemname ${target_name} NAME_WE)
-        pandocology_get_file_stemname(stemname ${target_name})
+        # add_custom_command(
+        #     TARGET ${target_name} POST_BUILD
+        #     DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+        #     # COMMAND cp ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS} ${product_directory}
+        #     COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+        #     )
         add_custom_command(
-            TARGET ${target_name} POST_BUILD
-            DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+            OUTPUT ${product_directory}/${stemname}.tbz
+            DEPENDS ${target_name}
             # COMMAND cp ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS} ${product_directory}
-            COMMAND ${CMAKE_COMMAND} -E tar cvjf ${product_directory}/${stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+            COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
             )
         add_to_make_clean(${product_directory}/${stemname}.tbz)
+        # add_custom_target(
+        #     ${stemname}.ARCHIVE
+        #     ALL
+        #     DEPENDS ${product_directory}/${stemname}.tbz
+        #     )
     endif()
-
-    # if (${ADD_PANDOC_DOCUMENT_CREATE_SOURCE_ARCHIVE})
-    #     add_custom_command(
-    #         OUTPUT  ${absolute_product_path}.tbz
-    #         DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
-    #         # WORKING_DIRECTORY ${working_directory}
-    #         COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}/bundle
-    #         COMMAND ${CMAKE_COMMAND} -E tar cvjf ${product_directory}/bundle/${target_name}.tbz ${build_sources} ${build_resources}
-    #         )
-    #     add_custom_target(
-    #         ${target_name}_bundle
-    #         ALL
-    #         DEPENDS ${absolute_product_path}.tbz ${ADD_PANDOC_DOCUMENT_DEPENDS}
-    #         )
-    # endif()
 
 endfunction(add_pandoc_document source)
 
