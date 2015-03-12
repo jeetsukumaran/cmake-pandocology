@@ -62,10 +62,17 @@ endfunction()
 
 # A version of GET_FILENAME_COMPONENT that treats extensions after the last
 # period rather than the first.
-function(pandocology_get_file_stemname varname filename)
+function(pandocology_get_file_target_stemname varname filename)
     SET(result)
     GET_FILENAME_COMPONENT(name ${filename} NAME)
     STRING(REGEX REPLACE "\\.[^.]*\$" "" result "${name}")
+    SET(${varname} "${result}" PARENT_SCOPE)
+endfunction()
+
+function(pandocology_get_file_extension varname filename)
+    SET(result)
+    GET_FILENAME_COMPONENT(name ${filename} NAME)
+    STRING(REGEX MATCH "\\.[^.]*\$" result "${name}")
     SET(${varname} "${result}" PARENT_SCOPE)
 endfunction()
 ###############################################################################
@@ -150,7 +157,14 @@ function(add_pandoc_document target_name)
     disable_insource_build()
 
     # get the stem of the target name
-    pandocology_get_file_stemname(stemname ${target_name})
+    pandocology_get_file_target_stemname(target_stemname ${target_name})
+    pandocology_get_file_extension(target_extension ${target_name})
+    if (${ADD_PANDOC_DOCUMENT_EXPORT_PDF})
+        if (NOT "${target_extension}" STREQUAL ".tex" AND NOT "${target_extension}" STREQUAL ".latex")
+        # if (NOT "${target_extension}" STREQUAL ".tex")
+            MESSAGE(FATAL_ERROR "Target '${target_name}': Cannot use 'EXPORT_PDF' for target of type '${target_extension}': target type must be '.tex' or '.latex'")
+        endif()
+    endif()
 
     ## set up output directory
     if ("${ADD_PANDOC_DOCUMENT_PRODUCT_DIRECTORY}" STREQUAL "")
@@ -199,11 +213,11 @@ function(add_pandoc_document target_name)
         set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${target_name})
     endif()
     if (${ADD_PANDOC_DOCUMENT_EXPORT_PDF})
-        set(primary_target_dependencies ${primary_target_dependencies} ${CMAKE_CURRENT_BINARY_DIR}/${stemname}.pdf)
-        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${stemname}.pdf)
+        set(primary_target_dependencies ${primary_target_dependencies} ${CMAKE_CURRENT_BINARY_DIR}/${target_stemname}.pdf)
+        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${target_stemname}.pdf)
     endif()
     if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
-        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${stemname}.tbz)
+        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${target_stemname}.tbz)
     endif()
 
     ## primary target
@@ -217,13 +231,13 @@ function(add_pandoc_document target_name)
 
     # run post-pdf
     if (${ADD_PANDOC_DOCUMENT_EXPORT_PDF})
-        # get_filename_component(stemname ${target_name} NAME_WE)
+        # get_filename_component(target_stemname ${target_name} NAME_WE)
         add_custom_command(
-            OUTPUT ${product_directory}/${stemname}.pdf ${CMAKE_CURRENT_BINARY_DIR}/${stemname}.pdf
+            OUTPUT ${product_directory}/${target_stemname}.pdf ${CMAKE_CURRENT_BINARY_DIR}/${target_stemname}.pdf
             DEPENDS ${target_name} ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
 
             # Does not work: custom template used to generate tex is ignored
-            # COMMAND ${PANDOC_EXECUTABLE} ${target_name} -f latex -o ${stemname}.pdf
+            # COMMAND ${PANDOC_EXECUTABLE} ${target_name} -f latex -o ${target_stemname}.pdf
 
             # (1)   Apparently, both nonstopmode and batchmode produce an output file
             #       even if there was an error. This tricks latexmk into believing
@@ -242,12 +256,12 @@ function(add_pandoc_document target_name)
             #       re-raise the error after a successful grep if there was an
             #       error in `latexmk`.
             # COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>&1 | grep -A8 ".*:[0-9]*:.*" || true
-            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${stemname}.log && false)
+            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${target_stemname}.log && false)
 
-            COMMAND ${CMAKE_COMMAND} -E copy ${stemname}.pdf ${product_directory}
+            COMMAND ${CMAKE_COMMAND} -E copy ${target_stemname}.pdf ${product_directory}
             )
-        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${stemname}.pdf)
-        add_to_make_clean(${product_directory}/${stemname}.pdf)
+        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_stemname}.pdf)
+        add_to_make_clean(${product_directory}/${target_stemname}.pdf)
     endif()
 
     ## copy products
@@ -262,24 +276,24 @@ function(add_pandoc_document target_name)
 
     ## copy resources
     if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
-        # get_filename_component(stemname ${target_name} NAME_WE)
+        # get_filename_component(target_stemname ${target_name} NAME_WE)
         # add_custom_command(
         #     TARGET ${target_name} POST_BUILD
         #     DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
         #     # COMMAND cp ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS} ${product_directory}
-        #     COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+        #     COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${target_stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
         #     )
         add_custom_command(
-            OUTPUT ${product_directory}/${stemname}.tbz
+            OUTPUT ${product_directory}/${target_stemname}.tbz
             DEPENDS ${target_name}
             # COMMAND cp ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS} ${product_directory}
-            COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+            COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${target_stemname}.tbz ${target_name} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
             )
-        add_to_make_clean(${product_directory}/${stemname}.tbz)
+        add_to_make_clean(${product_directory}/${target_stemname}.tbz)
         # add_custom_target(
-        #     ${stemname}.ARCHIVE
+        #     ${target_stemname}.ARCHIVE
         #     ALL
-        #     DEPENDS ${product_directory}/${stemname}.tbz
+        #     DEPENDS ${product_directory}/${target_stemname}.tbz
         #     )
     endif()
 
