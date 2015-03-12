@@ -55,7 +55,6 @@ function(pandocology_add_input_file source_path dest_dir dest_filelist_var)
         )
     set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
 endfunction()
-###############################################################################
 
 function(pandocology_get_file_stemname varname filename)
     SET(result)
@@ -63,6 +62,7 @@ function(pandocology_get_file_stemname varname filename)
     STRING(REGEX REPLACE "\\.[^.]*\$" "" result "${name}")
     SET(${varname} "${result}" PARENT_SCOPE)
 endfunction()
+###############################################################################
 
 function(pandocology_add_input_dir source_dir dest_parent_dir dest_filelist_var)
     set(dest_filelist)
