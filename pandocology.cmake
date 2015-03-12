@@ -43,7 +43,7 @@ endif()
 # U.S. Government. Redistribution and use in source and binary forms, with
 # or without modification, are permitted provided that this Notice and any
 # statement of authorship are reproduced on all copies.
-function(usepandoc_add_input_file source_path dest_dir dest_filelist_var)
+function(pandocology_add_input_file source_path dest_dir dest_filelist_var)
     set(dest_filelist)
     get_filename_component(filename ${source_path} NAME)
     get_filename_component(absolute_dest_path ${dest_dir}/${filename} ABSOLUTE)
@@ -64,7 +64,7 @@ function(pandocology_get_file_stemname varname filename)
     SET(${varname} "${result}" PARENT_SCOPE)
 endfunction()
 
-function(usepandoc_add_input_dir source_dir dest_parent_dir dest_filelist_var)
+function(pandocology_add_input_dir source_dir dest_parent_dir dest_filelist_var)
     set(dest_filelist)
     get_filename_component(dir_name ${source_dir} NAME)
     get_filename_component(absolute_dest_dir ${dest_parent_dir}/${dir_name} ABSOLUTE)
@@ -76,7 +76,7 @@ function(usepandoc_add_input_dir source_dir dest_parent_dir dest_filelist_var)
     file(GLOB source_files "${source_dir}/*")
     foreach(source_file ${source_files})
         # get_filename_component(absolute_source_path ${CMAKE_CURRENT_SOURCE_DIR}/${source_file} ABSOLUTE)
-        usepandoc_add_input_file(${source_file} ${absolute_dest_dir} dest_filelist)
+        pandocology_add_input_file(${source_file} ${absolute_dest_dir} dest_filelist)
     endforeach()
     set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
 endfunction()
@@ -108,7 +108,7 @@ endfunction()
 # Usage:
 #
 #
-#     INCLUDE(UsePandoc)
+#     INCLUDE(pandocology)
 #
 #     add_pandoc_document(
 #         figures.tex
@@ -153,21 +153,21 @@ function(add_pandoc_document target_name)
     ## get primary source
     set(build_sources)
     foreach(input_file ${ADD_PANDOC_DOCUMENT_SOURCES} )
-        usepandoc_add_input_file(${CMAKE_CURRENT_SOURCE_DIR}/${input_file} ${CMAKE_CURRENT_BINARY_DIR} build_sources)
+        pandocology_add_input_file(${CMAKE_CURRENT_SOURCE_DIR}/${input_file} ${CMAKE_CURRENT_BINARY_DIR} build_sources)
     endforeach()
 
     ## get resource files
     set(build_resources)
     foreach(resource_file ${ADD_PANDOC_DOCUMENT_RESOURCE_FILES})
-        usepandoc_add_input_file(${CMAKE_CURRENT_SOURCE_DIR}/${resource_file} ${CMAKE_CURRENT_BINARY_DIR} build_resources)
+        pandocology_add_input_file(${CMAKE_CURRENT_SOURCE_DIR}/${resource_file} ${CMAKE_CURRENT_BINARY_DIR} build_resources)
     endforeach()
 
     ## get resource dirs
     set(exported_resources)
     foreach(resource_dir ${ADD_PANDOC_DOCUMENT_RESOURCE_DIRS})
-        usepandoc_add_input_dir(${CMAKE_CURRENT_SOURCE_DIR}/${resource_dir} ${CMAKE_CURRENT_BINARY_DIR} build_resources)
+        pandocology_add_input_dir(${CMAKE_CURRENT_SOURCE_DIR}/${resource_dir} ${CMAKE_CURRENT_BINARY_DIR} build_resources)
         if (${ADD_PANDOC_DOCUMENT_EXPORT_ARCHIVE})
-            usepandoc_add_input_dir(${CMAKE_CURRENT_SOURCE_DIR}/${resource_dir} ${product_directory} exported_resources)
+            pandocology_add_input_dir(${CMAKE_CURRENT_SOURCE_DIR}/${resource_dir} ${product_directory} exported_resources)
         endif()
     endforeach()
 
