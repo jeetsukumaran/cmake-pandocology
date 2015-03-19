@@ -3,6 +3,14 @@
 "Pandocology" is a [CMake](http://www.cmake.org/) module that allows you to generate documents using [pandoc](http://johnmacfarlane.net/pandoc/).
 It is very much modeled after [UseLATEX](http://www.cmake.org/Wiki/CMakeUserUseLATEX), and is meant to make the process of going from source to final product as easy as possible, so you can focus on writing instead of compiling.
 
+
+## Requirements
+
+-   Pandoc
+-   LaTeX
+-   latexmk
+
+
 ## Installation
 
 Simply place the file "`pandocology.cmake`" in a place where CMake can find it, i.e., somewhere on your CMake module path.
