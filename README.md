@@ -107,6 +107,8 @@ add_pandoc_document(
 )
 ~~~
 
+**IMPORTANT NOTE:** When adding resources on a directory-bases using the `RESOURCE_DIRS` argument, all the resources that are in that directory *at the time* `cmake ..` is run are added as dependencies. The CMake system does not provide a way to monitor directories for changes, only files. Thus, if you add (or remove) files from any of the directories specified by the `RESOURCE_DIRS` argument, you will have to run `cmake ..` again to make sure that the build system adds (or removes) these files from the build specifications.
+
 ## Including Content After the Reference Section
 
 One quirk of "`pandoc`" is that the bibliography/reference section is necessarily the last part of the main document body: you cannot (easily and organically) have any sections, such as an appendix, after the reference section.
