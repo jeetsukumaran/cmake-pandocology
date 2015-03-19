@@ -63,7 +63,7 @@ endfunction()
 
 # A version of GET_FILENAME_COMPONENT that treats extensions after the last
 # period rather than the first.
-function(pandocology_get_file_target_stemname varname filename)
+function(pandocology_get_file_stemname varname filename)
     SET(result)
     GET_FILENAME_COMPONENT(name ${filename} NAME)
     STRING(REGEX REPLACE "\\.[^.]*\$" "" result "${name}")
@@ -150,7 +150,7 @@ endfunction()
 #         )
 #
 function(add_pandoc_document target_name)
-    set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF)
+    set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF BYPASS_PANDOC_TO_PDF)
     set(oneValueArgs     PRODUCT_DIRECTORY)
     set(multiValueArgs   SOURCES RESOURCE_FILES RESOURCE_DIRS PANDOC_DIRECTIVES DEPENDS)
     cmake_parse_arguments(ADD_PANDOC_DOCUMENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -159,12 +159,28 @@ function(add_pandoc_document target_name)
     disable_insource_build()
 
     # get the stem of the target name
-    pandocology_get_file_target_stemname(target_stemname ${target_name})
+    pandocology_get_file_stemname(target_stemname ${target_name})
     pandocology_get_file_extension(target_extension ${target_name})
     if (${ADD_PANDOC_DOCUMENT_EXPORT_PDF})
         if (NOT "${target_extension}" STREQUAL ".tex" AND NOT "${target_extension}" STREQUAL ".latex")
         # if (NOT "${target_extension}" STREQUAL ".tex")
             MESSAGE(FATAL_ERROR "Target '${target_name}': Cannot use 'EXPORT_PDF' for target of type '${target_extension}': target type must be '.tex' or '.latex'")
+        endif()
+    endif()
+    if (${ADD_PANDOC_DOCUMENT_BYPASS_PANDOC_TO_PDF})
+        list(LENGTH ${ADD_PANDOC_DOCUMENT_SOURCES} SOURCE_LEN)
+        if (SOURCE_LEN GREATER 1)
+            MESSAGE(FATAL_ERROR "Target '${target_name}': Only one source can be specified when using the 'BYPASS_PANDOC_TO_PDF' option")
+        endif()
+        # set(ADD_PANDOC_DOCUMENT_SOURCES, list(GET ${ADD_PANDOC_DOCUMENT_SOURCES} 1))
+        pandocology_get_file_stemname(source_stemname ${ADD_PANDOC_DOCUMENT_SOURCES})
+        pandocology_get_file_extension(source_extension ${ADD_PANDOC_DOCUMENT_SOURCES})
+        if (NOT "${source_extension}" STREQUAL ".tex" AND NOT "${source_extension}" STREQUAL ".latex")
+            MESSAGE(FATAL_ERROR "Target '${target_name}': Cannot use 'BYPASS_PANDOC_TO_PDF' for source of type '${source_extension}': source type must be '.tex' or '.latex'")
+        endif()
+        SET(check_target ${source_stemname}.pdf)
+        IF (NOT ${check_target} STREQUAL ${target_name})
+            MESSAGE(FATAL_ERROR "Target '${target_name}': Must use target name of '${check_target}' if using 'BYPASS_PANDOC_TO_PDF'")
         endif()
     endif()
 
@@ -197,15 +213,27 @@ function(add_pandoc_document target_name)
     endforeach()
 
     ## primary command
-    add_custom_command(
-        OUTPUT  ${target_name} # note that this is in the build directory
-        DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
-        # WORKING_DIRECTORY ${working_directory}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
-        # we produce the target in the source directory, in case other build targets require it as a source
-        COMMAND ${PANDOC_EXECUTABLE} ${build_sources} ${ADD_PANDOC_DOCUMENT_PANDOC_DIRECTIVES} -o ${target_name}
-        )
-    add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_name})
+    if (${ADD_PANDOC_DOCUMENT_BYPASS_PANDOC_TO_PDF})
+        add_custom_command(
+            OUTPUT  ${target_name} # note that this is in the build directory
+            DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+            # WORKING_DIRECTORY ${working_directory}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
+            # we produce the target in the source directory, in case other build targets require it as a source
+            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${build_sources} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${target_stemname}.log && false)
+            )
+        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_name})
+    else()
+        add_custom_command(
+            OUTPUT  ${target_name} # note that this is in the build directory
+            DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+            # WORKING_DIRECTORY ${working_directory}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
+            # we produce the target in the source directory, in case other build targets require it as a source
+            COMMAND ${PANDOC_EXECUTABLE} ${build_sources} ${ADD_PANDOC_DOCUMENT_PANDOC_DIRECTIVES} -o ${target_name}
+            )
+        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_name})
+    endif()
 
     ## figure out what all is going to be produced by this build set, and set
     ## those as dependencies of the primary target
