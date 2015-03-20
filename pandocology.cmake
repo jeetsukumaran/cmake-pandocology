@@ -150,7 +150,7 @@ endfunction()
 #         )
 #
 function(add_pandoc_document target_name)
-    set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF BYPASS_PANDOC_TO_PDF)
+    set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF BYPASS_PANDOC_TO_PDF VERBOSE)
     set(oneValueArgs     PRODUCT_DIRECTORY)
     set(multiValueArgs   SOURCES RESOURCE_FILES RESOURCE_DIRS PANDOC_DIRECTIVES DEPENDS)
     cmake_parse_arguments(ADD_PANDOC_DOCUMENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -214,14 +214,25 @@ function(add_pandoc_document target_name)
 
     ## primary command
     if (${ADD_PANDOC_DOCUMENT_BYPASS_PANDOC_TO_PDF})
-        add_custom_command(
-            OUTPUT  ${target_name} # note that this is in the build directory
-            DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
-            # WORKING_DIRECTORY ${working_directory}
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
-            # we produce the target in the source directory, in case other build targets require it as a source
-            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${build_sources} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${target_stemname}.log && false)
-            )
+        if (${ADD_PANDOC_DOCUMENT_VERBOSE})
+            add_custom_command(
+                OUTPUT  ${target_name} # note that this is in the build directory
+                DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+                # WORKING_DIRECTORY ${working_directory}
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
+                # we produce the target in the source directory, in case other build targets require it as a source
+                COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${build_sources}
+                )
+        else()
+            add_custom_command(
+                OUTPUT  ${target_name} # note that this is in the build directory
+                DEPENDS ${build_sources} ${build_resources} ${ADD_PANDOC_DOCUMENT_DEPENDS}
+                # WORKING_DIRECTORY ${working_directory}
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
+                # we produce the target in the source directory, in case other build targets require it as a source
+                COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${build_sources} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${target_stemname}.log && false)
+                )
+        endif()
         add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_name})
     else()
         add_custom_command(
