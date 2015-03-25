@@ -292,7 +292,6 @@ add_tex_document(
 In either case, using the direct-tex-to-PDF feature requires that:
 
 -   There must be only one source (though an arbitrary number of additional sources included in the main source can be specfied using the "``RESOURCE_FILES``" and "``RESOURCE_DIRS`` arguments).
--   The source name *must* have a "``.tex``" or "``.latex``" extension, and, of course, must be in TeX or LaTeX format.
--   The target name *must* have a "``.pdf``" extension.
--   The target stem name must match the source stem name (i.e., the source and target name must be exactly the same except for the extension, as show by "``opus.tex``" for the source name and "``opus.pdf``" for the target name in the above examples).
+-   The source name (i.e., "``opus.tex``" in the above examples) *must* have a "``.tex``" or "``.latex``" extension, and, of course, must be in TeX or LaTeX format.
+-   The target name (i.e., "``opus.pdf``" in the above examples) *must* have a "``.pdf``" extension, and match the source name exactly except for the extension.
 
