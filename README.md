@@ -261,7 +261,7 @@ The former is the PDF of the document while the latter is the LaTeX file plus al
 ## Working with TeX and LaTeX Source Files
 
 The Pandocology module provides some build functionality that might be desirable even if you are not actually using or want to use Pandoc.
-For example, the resource management feature, or the ability to bundle all source and resource files into an archive, the ability to specify an output directory, and so on.
+For example, the resource management feature, the ability to bundle all source and resource files into an archive, the ability to specify an output directory, and so on.
 If you have a a TeX or a LaTeX project, and you want to generate the final PDF's without using Pandoc but still want to use Pandocology to manage the build process so that you have access to these extra features of Pandocology, you can specify the ``DIRECT_TEX_TO_PDF`` flag, which can be used in conjunction with any other options described previously (though, of course, some options such as ``PANDOC_DIRECTIVES`` make no sense in this context and will be ignored):
 
 ~~~
@@ -289,7 +289,7 @@ add_tex_document(
     )
 ~~~
 
-With this approach:
+In either case, using the direct-tex-to-PDF feature requires that:
 
 -   There must be only one source (though an arbitrary number of additional sources included in the main source can be specfied using the "``RESOURCE_FILES``" and "``RESOURCE_DIRS`` arguments).
 -   The source name *must* have a "``.tex``" or "``.latex``" extension, and, of course, must be in TeX or LaTeX format.
