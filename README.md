@@ -49,7 +49,7 @@ INCLUDE(pandocology)
 
 ## Basic Usage
 
-The primary command offered by "Pandocology" is "`add_pandoc_document()`".
+The primary command offered by "Pandocology" is "`add_document()`".
 
 This command takes, at a mininum, two arguments: a *target name*, which specifies the output file (and, by inspection of the extension, the output file format), and at least one source file specifed by the "`SOURCES`" argument.
 So, for example, if you had a Markdown format input file (say, "`opus.md`") that you wanted to convert to Rich Text Format, then the following is a minimal "`CMakeLists.txt`" to do that.
@@ -58,7 +58,7 @@ So, for example, if you had a Markdown format input file (say, "`opus.md`") that
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/cmake-pandocology")
 INCLUDE(pandocology)
 
-add_pandoc_document(
+add_document(
     opus.rtf
     SOURCES opus.md
 )
@@ -67,7 +67,7 @@ add_pandoc_document(
 Once the project is built, the result "`opus.rtf`" will end up in the "`product`" subdirectory of the build directory.
 You can change the output directory by using the "`PRODUCT_DIRECTORY`" argument:
 ~~~
-add_pandoc_document(
+add_document(
     opus.rtf
     SOURCES opus.md
     PRODUCT_DIRECTORY opus_output_directory
@@ -79,7 +79,7 @@ add_pandoc_document(
 You have access to the full complexity of the Pandoc compiler through the "`PANDOC_DIRECTIVES`" argument, which will pass everything to the underlying "`pandoc`" program. So, for example, to generate a PDF with some custom options:
 
 ~~~
-add_pandoc_document(
+add_document(
     opus.pdf
     SOURCES opus.md
     PANDOC_DIRECTIVES -t latex
@@ -98,7 +98,7 @@ All these secondary files or inputs that are not the primary input to the "`pand
 These resources can be specified on a file-by-file basis using the "`RESOURCE_FILES`" argument and on a directory-by-directory basis using the "`RESOURCE_DIRS`" argument (note that all paths are relative to the current source directory):
 
 ~~~
-add_pandoc_document(
+add_document(
     opus.pdf
     SOURCES opus.md
     RESOURCE_FILES references.bib custom.template.latex journal.csl
@@ -124,7 +124,7 @@ The work-around is to create these post-reference sections as a separate documen
 
 You can support this workflow using Pandocology as follows:
 ~~~
-add_pandoc_document(
+add_document(
     appendices.tex
     SOURCES              appendices.md
     RESOURCE_DIRS        appendix-figs
@@ -132,7 +132,7 @@ add_pandoc_document(
     NO_EXPORT_PRODUCT
     )
 
-add_pandoc_document(
+add_document(
     opus.pdf
     SOURCES             opus.md
     RESOURCE_FILES      references.bib custom.template.latex journal.csl
@@ -167,7 +167,7 @@ With some output formats that are themselves source formats requiring further pr
 You can do this by specifying the "`EXPORT_ARCHIVE`" flag, which will create a compressed archive of the final file *as well as* all the static resource files, the static resource directories, *and* the generated resource dependencies:
 
 ~~~
-add_pandoc_document(
+add_document(
     appendices.tex
     SOURCES              appendices.md
     RESOURCE_DIRS        appendix-figs
@@ -175,7 +175,7 @@ add_pandoc_document(
     NO_EXPORT_PRODUCT
     )
 
-add_pandoc_document(
+add_document(
     opus.tex
     SOURCES             opus.md
     RESOURCE_FILES      references.bib custom.template.latex journal.csl
@@ -197,7 +197,7 @@ In the above case, once run, the output directory will not only have the primary
 
 If you want *just* the archive (which include the primary product, i.e., "`opus.tex`" in the example above), and not the primary file to be created in the output directory, then specify "`EXPORT_ARCHIVE`" and "`NO_EXPORT_PRODUCT`" together. The former creates the archive and the latter suppresses the creation of a separate (and perhaps, for your purposes, redundant) output.
 ~~~
-add_pandoc_document(
+add_document(
     opus.tex
     SOURCES             opus.md
     RESOURCE_FILES      references.bib custom.template.latex journal.csl
@@ -227,7 +227,7 @@ The way to do this using Pandocology is to:
 
 
 ~~~
-add_pandoc_document(
+add_document(
     appendices.tex
     SOURCES              appendices.md
     RESOURCE_DIRS        appendix-figs
@@ -235,7 +235,7 @@ add_pandoc_document(
     NO_EXPORT_PRODUCT
     )
 
-add_pandoc_document(
+add_document(
     opus.tex
     SOURCES              opus.md
     RESOURCE_FILES       references.bib custom.template.latex journal.csl
@@ -257,4 +257,42 @@ add_pandoc_document(
 
 If the above is run, the output directory will have two files: "`opus.pdf`" and "`opus.tbz`".
 The former is the PDF of the document while the latter is the LaTeX file plus all resources needed to generate the PDF.
+
+## Working with TeX and LaTeX Source Files
+
+The Pandocology module provides some build functionality that might be desirable even if you are not actually using or want to use Pandoc.
+For example, the resource management feature, or the ability to bundle all source and resource files into an archive, the ability to specify an output directory, and so on.
+If you have a a TeX or a LaTeX project, and you want to generate the final PDF's without using Pandoc but still want to use Pandocology to manage the build process so that you have access to these extra features of Pandocology, you can specify the ``DIRECT_TEX_TO_PDF`` flag, which can be used in conjunction with any other options described previously (though, of course, some options such as ``PANDOC_DIRECTIVES`` make no sense in this context and will be ignored):
+
+~~~
+add_document(
+    opus.pdf
+    SOURCES              opus.tex
+    RESOURCE_FILES       opus.bib figures.tex sysbio.bst
+    RESOURCE_DIRS        figs
+    DIRECT_TEX_TO_PDF
+    EXPORT_ARCHIVE
+    )
+~~~
+
+As can be seen, all resources and resource directories (as well as dependencies) are specified as before.
+
+For convenience (mnemonic as much as operational), you can call the function ``add_tex_document()`` instead:
+
+~~~
+add_tex_document(
+    opus.pdf
+    SOURCES              opus.tex
+    RESOURCE_FILES       opus.bib figures.tex sysbio.bst
+    RESOURCE_DIRS        figs
+    EXPORT_ARCHIVE
+    )
+~~~
+
+With this approach:
+
+-   There must be only one source (though an arbitrary number of additional sources included in the main source can be specfied using the "``RESOURCE_FILES``" and "``RESOURCE_DIRS`` arguments).
+-   The source name *must* have a "``.tex``" or "``.latex``" extension, and, of course, must be in TeX or LaTeX format.
+-   The target name *must* have a "``.pdf``" extension.
+-   The target stem name must match the source stem name (i.e., the source and target name must be exactly the same except for the extension, as show by "``opus.tex``" for the source name and "``opus.pdf``" for the target name in the above examples).
 
