@@ -258,7 +258,7 @@ add_document(
 If the above is run, the output directory will have two files: "`opus.pdf`" and "`opus.tbz`".
 The former is the PDF of the document while the latter is the LaTeX file plus all resources needed to generate the PDF.
 
-## Working with TeX and LaTeX Source Files
+## Working with Pure TeX and LaTeX Source Files: Using Pandocology without using Pandoc
 
 The Pandocology module provides some build functionality that might be desirable even if you are not actually using or want to use Pandoc.
 For example, the resource management feature, the ability to bundle all source and resource files into an archive, the ability to specify an output directory, and so on.
