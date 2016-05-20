@@ -49,16 +49,20 @@ endif()
 # directory before main build
 function(pandocology_add_input_file source_path dest_dir dest_filelist_var)
     set(dest_filelist)
-    get_filename_component(filename ${source_path} NAME)
-    get_filename_component(absolute_dest_path ${dest_dir}/${filename} ABSOLUTE)
-    file(RELATIVE_PATH relative_dest_path ${CMAKE_CURRENT_BINARY_DIR} ${absolute_dest_path})
-    list(APPEND dest_filelist ${absolute_dest_path})
-    ADD_CUSTOM_COMMAND(
-        OUTPUT ${relative_dest_path}
-        COMMAND ${CMAKE_COMMAND} -E copy ${source_path} ${dest_dir}/${filename}
-        DEPENDS ${source_path}
-        )
-    set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
+    file(GLOB globbed_source_paths "${source_path}")
+    foreach(globbed_source_path ${globbed_source_paths})
+        # MESSAGE(FATAL_ERROR "${globbed_source_path}")
+        get_filename_component(filename ${globbed_source_path} NAME)
+        get_filename_component(absolute_dest_path ${dest_dir}/${filename} ABSOLUTE)
+        file(RELATIVE_PATH relative_dest_path ${CMAKE_CURRENT_BINARY_DIR} ${absolute_dest_path})
+        list(APPEND dest_filelist ${absolute_dest_path})
+        ADD_CUSTOM_COMMAND(
+            OUTPUT ${relative_dest_path}
+            COMMAND ${CMAKE_COMMAND} -E copy ${globbed_source_path} ${dest_dir}/${filename}
+            DEPENDS ${globbed_source_path}
+            )
+        set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
+    endforeach()
 endfunction()
 
 # A version of GET_FILENAME_COMPONENT that treats extensions after the last
