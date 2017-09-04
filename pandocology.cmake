@@ -164,7 +164,8 @@ endfunction()
 #         )
 #
 #     add_document(
-#         OUTPUT_FILE         opus.pdf
+#         TARGET               opus
+#         OUTPUT_FILE          opus.pdf
 #         SOURCES              opus.md
 #         RESOURCE_FILES       opus.bib systbiol.template.latex systematic-biology.csl
 #         RESOURCE_DIRS        figs
