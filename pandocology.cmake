@@ -74,7 +74,7 @@ function(pandocology_add_input_file source_path dest_dir dest_filelist_var)
         list(APPEND dest_filelist ${absolute_dest_path})
         ADD_CUSTOM_COMMAND(
             OUTPUT ${relative_dest_path}
-            COMMAND ${CMAKE_COMMAND} -E copy ${globbed_source_path} ${dest_dir}/${filename}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${globbed_source_path} ${dest_dir}/${filename}
             DEPENDS ${globbed_source_path}
             )
         set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
@@ -100,6 +100,7 @@ endfunction()
 
 function(pandocology_add_input_dir source_dir dest_parent_dir dir_dest_filelist_var)
     set(dir_dest_filelist)
+    file(TO_CMAKE_PATH ${source_dir} source_dir)
     get_filename_component(dir_name ${source_dir} NAME)
     get_filename_component(absolute_dest_dir ${dest_parent_dir}/${dir_name} ABSOLUTE)
     file(RELATIVE_PATH relative_dest_dir ${CMAKE_CURRENT_BINARY_DIR} ${absolute_dest_dir})
@@ -146,7 +147,8 @@ endfunction()
 #     INCLUDE(pandocology)
 #
 #     add_document(
-#         figures.tex
+#         TARGET              figures
+#         OUTPUT_FILE         figures.tex
 #         SOURCES              figures.md
 #         RESOURCE_DIRS        figs
 #         PANDOC_DIRECTIVES    -t latex
@@ -154,7 +156,7 @@ endfunction()
 #         )
 #
 #     add_document(
-#         opus.pdf
+#         OUTPUT_FILE         opus.pdf
 #         SOURCES              opus.md
 #         RESOURCE_FILES       opus.bib systbiol.template.latex systematic-biology.csl
 #         RESOURCE_DIRS        figs
@@ -165,42 +167,50 @@ endfunction()
 #                             --csl          systematic-biology.csl
 #                             --bibliography opus.bib
 #                             --include-after-body=figures.tex
-#         DEPENDS             figures.tex
+#         DEPENDS             figures
 #         EXPORT_ARCHIVE
 #         )
 #
-function(add_document target_name)
+function(add_document)
     set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF DIRECT_TEX_TO_PDF VERBOSE)
-    set(oneValueArgs     PRODUCT_DIRECTORY)
+    set(oneValueArgs     TARGET OUTPUT_FILE PRODUCT_DIRECTORY)
     set(multiValueArgs   SOURCES RESOURCE_FILES RESOURCE_DIRS PANDOC_DIRECTIVES DEPENDS)
     cmake_parse_arguments(ADD_DOCUMENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
     # this is because `make clean` will dangerously clean up source files
     disable_insource_build()
 
+    if ("${ADD_DOCUMENT_TARGET}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "add_document() requires a target name by using the TARGET option")
+    endif()
+
+    if ("${ADD_DOCUMENT_OUTPUT_FILE}" STREQUAL "")
+        MESSAGE(FATAL_ERROR "add_document() requires an output file name by using the OUTPUT_FILE option")
+    endif()
+
     # get the stem of the target name
-    pandocology_get_file_stemname(target_stemname ${target_name})
-    pandocology_get_file_extension(target_extension ${target_name})
+    pandocology_get_file_stemname(target_stemname ${ADD_DOCUMENT_OUTPUT_FILE})
+    pandocology_get_file_extension(target_extension ${ADD_DOCUMENT_OUTPUT_FILE})
     if (${ADD_DOCUMENT_EXPORT_PDF})
         if (NOT "${target_extension}" STREQUAL ".tex" AND NOT "${target_extension}" STREQUAL ".latex")
         # if (NOT "${target_extension}" STREQUAL ".tex")
-            MESSAGE(FATAL_ERROR "Target '${target_name}': Cannot use 'EXPORT_PDF' for target of type '${target_extension}': target type must be '.tex' or '.latex'")
+            MESSAGE(FATAL_ERROR "Target '${ADD_DOCUMENT_TARGET}': Cannot use 'EXPORT_PDF' for target of type '${target_extension}': target type must be '.tex' or '.latex'")
         endif()
     endif()
     if (${ADD_DOCUMENT_DIRECT_TEX_TO_PDF})
         list(LENGTH ${ADD_DOCUMENT_SOURCES} SOURCE_LEN)
         if (SOURCE_LEN GREATER 1)
-            MESSAGE(FATAL_ERROR "Target '${target_name}': Only one source can be specified when using the 'DIRECT_TEX_TO_PDF' option")
+            MESSAGE(FATAL_ERROR "Target '${ADD_DOCUMENT_TARGET}': Only one source can be specified when using the 'DIRECT_TEX_TO_PDF' option")
         endif()
         # set(ADD_DOCUMENT_SOURCES, list(GET ${ADD_DOCUMENT_SOURCES} 1))
         pandocology_get_file_stemname(source_stemname ${ADD_DOCUMENT_SOURCES})
         pandocology_get_file_extension(source_extension ${ADD_DOCUMENT_SOURCES})
         if (NOT "${source_extension}" STREQUAL ".tex" AND NOT "${source_extension}" STREQUAL ".latex")
-            MESSAGE(FATAL_ERROR "Target '${target_name}': Cannot use 'DIRECT_TEX_TO_PDF' for source of type '${source_extension}': source type must be '.tex' or '.latex'")
+            MESSAGE(FATAL_ERROR "Target '${ADD_DOCUMENT_TARGET}': Cannot use 'DIRECT_TEX_TO_PDF' for source of type '${source_extension}': source type must be '.tex' or '.latex'")
         endif()
         SET(check_target ${source_stemname}.pdf)
-        IF (NOT ${check_target} STREQUAL ${target_name})
-            MESSAGE(FATAL_ERROR "Target '${target_name}': Must use target name of '${check_target}' if using 'DIRECT_TEX_TO_PDF'")
+        IF (NOT ${check_target} STREQUAL ${ADD_DOCUMENT_OUTPUT_FILE})
+            MESSAGE(FATAL_ERROR "Target '${ADD_DOCUMENT_TARGET}': Must use target name of '${check_target}' if using 'DIRECT_TEX_TO_PDF'")
         endif()
     endif()
 
@@ -209,7 +219,7 @@ function(add_document target_name)
         set(ADD_DOCUMENT_PRODUCT_DIRECTORY "product")
     endif()
     get_filename_component(product_directory ${CMAKE_BINARY_DIR}/${ADD_DOCUMENT_PRODUCT_DIRECTORY} ABSOLUTE)
-    # get_filename_component(absolute_product_path ${product_directory}/${target_name} ABSOLUTE)
+    # get_filename_component(absolute_product_path ${product_directory}/${ADD_DOCUMENT_OUTPUT_FILE} ABSOLUTE)
 
     ## get primary source
     set(build_sources)
@@ -236,7 +246,7 @@ function(add_document target_name)
     if (${ADD_DOCUMENT_DIRECT_TEX_TO_PDF})
         if (${ADD_DOCUMENT_VERBOSE})
             add_custom_command(
-                OUTPUT  ${target_name} # note that this is in the build directory
+                OUTPUT  ${ADD_DOCUMENT_OUTPUT_FILE} # note that this is in the build directory
                 DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
                 # WORKING_DIRECTORY ${working_directory}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
@@ -245,7 +255,7 @@ function(add_document target_name)
                 )
         else()
             add_custom_command(
-                OUTPUT  ${target_name} # note that this is in the build directory
+              OUTPUT  ${ADD_DOCUMENT_OUTPUT_FILE} # note that this is in the build directory
                 DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
                 # WORKING_DIRECTORY ${working_directory}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
@@ -253,25 +263,26 @@ function(add_document target_name)
                 COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${build_sources} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${target_stemname}.log && false)
                 )
         endif()
-        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_name})
+        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${ADD_DOCUMENT_OUTPUT_FILE})
     else()
         add_custom_command(
-            OUTPUT  ${target_name} # note that this is in the build directory
+            OUTPUT  ${ADD_DOCUMENT_OUTPUT_FILE} # note that this is in the build directory
             DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
             # WORKING_DIRECTORY ${working_directory}
             COMMAND ${CMAKE_COMMAND} -E make_directory ${product_directory}
             # we produce the target in the source directory, in case other build targets require it as a source
-            COMMAND ${PANDOC_EXECUTABLE} ${build_sources} ${ADD_DOCUMENT_PANDOC_DIRECTIVES} -o ${target_name}
+            COMMAND ${PANDOC_EXECUTABLE} ${build_sources}
+            ${ADD_DOCUMENT_PANDOC_DIRECTIVES} -o ${ADD_DOCUMENT_OUTPUT_FILE}
             )
-        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${target_name})
+        add_to_make_clean(${CMAKE_CURRENT_BINARY_DIR}/${ADD_DOCUMENT_OUTPUT_FILE})
     endif()
 
     ## figure out what all is going to be produced by this build set, and set
     ## those as dependencies of the primary target
     set(primary_target_dependencies)
-    set(primary_target_dependencies ${primary_target_dependencies} ${CMAKE_CURRENT_BINARY_DIR}/${target_name})
+    set(primary_target_dependencies ${primary_target_dependencies} ${CMAKE_CURRENT_BINARY_DIR}/${ADD_DOCUMENT_OUTPUT_FILE})
     if (NOT ${ADD_DOCUMENT_NO_EXPORT_PRODUCT})
-        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${target_name})
+        set(primary_target_dependencies ${primary_target_dependencies} ${product_directory}/${ADD_DOCUMENT_OUTPUT_FILE})
     endif()
     if (${ADD_DOCUMENT_EXPORT_PDF})
         set(primary_target_dependencies ${primary_target_dependencies} ${CMAKE_CURRENT_BINARY_DIR}/${target_stemname}.pdf)
@@ -285,20 +296,20 @@ function(add_document target_name)
     # # target cannot have same (absolute name) as dependencies:
     # # http://www.cmake.org/pipermail/cmake/2011-March/043378.html
     add_custom_target(
-        ${target_name}
+        ${ADD_DOCUMENT_TARGET}
         ALL
         DEPENDS ${primary_target_dependencies} ${ADD_DOCUMENT_DEPENDS}
         )
 
     # run post-pdf
     if (${ADD_DOCUMENT_EXPORT_PDF})
-        # get_filename_component(target_stemname ${target_name} NAME_WE)
+        # get_filename_component(target_stemname ${ADD_DOCUMENT_OUTPUT_FILE} NAME_WE)
         add_custom_command(
             OUTPUT ${product_directory}/${target_stemname}.pdf ${CMAKE_CURRENT_BINARY_DIR}/${target_stemname}.pdf
-            DEPENDS ${target_name} ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
+            DEPENDS ${ADD_DOCUMENT_OUTPUT_FILE} ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
 
             # Does not work: custom template used to generate tex is ignored
-            # COMMAND ${PANDOC_EXECUTABLE} ${target_name} -f latex -o ${target_stemname}.pdf
+            # COMMAND ${PANDOC_EXECUTABLE} ${ADD_DOCUMENT_OUTPUT_FILE} -f latex -o ${target_stemname}.pdf
 
             # (1)   Apparently, both nonstopmode and batchmode produce an output file
             #       even if there was an error. This tricks latexmk into believing
@@ -316,8 +327,8 @@ function(add_document target_name)
             #       So we can have our cake and eat it too: here we want to
             #       re-raise the error after a successful grep if there was an
             #       error in `latexmk`.
-            # COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>&1 | grep -A8 ".*:[0-9]*:.*" || true
-            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${target_name} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${target_stemname}.log && false)
+            # COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode # -file-line-error -pdf ${ADD_DOCUMENT_OUTPUT_FILE} 2>&1 | grep -A8 ".*:[0-9]*:.*" || true
+            COMMAND latexmk -gg -halt-on-error -interaction=nonstopmode -file-line-error -pdf ${ADD_DOCUMENT_OUTPUT_FILE} 2>/dev/null >/dev/null || (grep --no-messages -A8 ".*:[0-9]*:.*" ${target_stemname}.log && false)
 
             COMMAND ${CMAKE_COMMAND} -E copy ${target_stemname}.pdf ${product_directory}
             )
@@ -328,27 +339,27 @@ function(add_document target_name)
     ## copy products
     if (NOT ${ADD_DOCUMENT_NO_EXPORT_PRODUCT})
         add_custom_command(
-            OUTPUT ${product_directory}/${target_name}
+            OUTPUT ${product_directory}/${ADD_DOCUMENT_OUTPUT_FILE}
             DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
-            COMMAND ${CMAKE_COMMAND} -E copy ${target_name} ${product_directory}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ADD_DOCUMENT_OUTPUT_FILE} ${product_directory}
             )
-        add_to_make_clean(${product_directory}/${target_name})
+        add_to_make_clean(${product_directory}/${ADD_DOCUMENT_OUTPUT_FILE})
     endif()
 
     ## copy resources
     if (${ADD_DOCUMENT_EXPORT_ARCHIVE})
-        # get_filename_component(target_stemname ${target_name} NAME_WE)
+        # get_filename_component(target_stemname ${ADD_DOCUMENT_OUTPUT_FILE} NAME_WE)
         # add_custom_command(
-        #     TARGET ${target_name} POST_BUILD
+        #     TARGET ${ADD_DOCUMENT_OUTPUT_FILE} POST_BUILD
         #     DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
         #     # COMMAND cp ${build_resources} ${ADD_DOCUMENT_DEPENDS} ${product_directory}
-        #     COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${target_stemname}.tbz ${target_name} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
+        #     COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${target_stemname}.tbz ${ADD_DOCUMENT_OUTPUT_FILE} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
         #     )
         add_custom_command(
             OUTPUT ${product_directory}/${target_stemname}.tbz
-            DEPENDS ${target_name}
+            DEPENDS ${ADD_DOCUMENT_OUTPUT_FILE}
             # COMMAND cp ${build_resources} ${ADD_DOCUMENT_DEPENDS} ${product_directory}
-            COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${target_stemname}.tbz ${target_name} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
+            COMMAND ${CMAKE_COMMAND} -E tar cjf ${product_directory}/${target_stemname}.tbz ${ADD_DOCUMENT_OUTPUT_FILE} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
             )
         add_to_make_clean(${product_directory}/${target_stemname}.tbz)
         # add_custom_target(
