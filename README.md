@@ -23,7 +23,7 @@ project/
     src/
 ~~~
 
-you might place this file "`pandocology.cmake` in "`project/cmake/Modules`", and then add a line like the following either in the top-level "`CMakeLists.txt`" or any other "`CMakeLists.txt`" processed before the commands provided by "Pandocology" are needed:
+ou might place the file "`pandocology.cmake` in "`project/cmake/Modules`", and then add a line like the following either in the top-level "`CMakeLists.txt`" or any other "`CMakeLists.txt`" processed before the commands provided by "Pandocology" are needed:
 
 ~~~
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
@@ -35,7 +35,7 @@ $ cd cmake/Modules
 $ git submodule add https://github.com/jeetsukumaran/cmake-pandocology.git
 ~~~
 
-And I added the following line to my top-level "`CMakeLists.txt`":
+Then, I added the following line to my top-level "`CMakeLists.txt`":
 
 ~~~
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/cmake-pandocology")
@@ -93,7 +93,7 @@ add_document(
 ## Including Static Resources
 
 In many cases your inputs are going to be more than just the primary source document: images, CSS stylesheets, BibTeX bibliography database files, stylesheets, templates etc.
-All these secondary files or inputs that are not the primary input to the "`pandoc`" program but are required to compile the main document are known as "*resources*".
+All these secondary files or inputs that are not the primary input to the "`pandoc`" program, but are required to compile the main document, are known as "*resources*".
 
 These resources can be specified on a file-by-file basis using the "`RESOURCE_FILES`" argument and on a directory-by-directory basis using the "`RESOURCE_DIRS`" argument (note that all paths are relative to the current source directory):
 
@@ -115,7 +115,7 @@ add_document(
 )
 ~~~
 
-**IMPORTANT NOTE:** When adding resources on a directory-bases using the `RESOURCE_DIRS` argument, all the resources that are in that directory *at the time* `cmake ..` is run are added as dependencies. The CMake system does not provide a way to monitor directories for changes, only files. Thus, if you add (or remove) files from any of the directories specified by the `RESOURCE_DIRS` argument, you will have to run `cmake ..` again to make sure that the build system adds (or removes) these files from the build specifications.
+**IMPORTANT NOTE:** When adding resources on a directory-basis using the `RESOURCE_DIRS` argument, all the resources that are in that directory *at the time* `cmake ..` is run are added as dependencies. The CMake system does not provide a way to monitor directories for changes, only files. Thus, if you add (or remove) files from any of the directories specified by the `RESOURCE_DIRS` argument, you will have to run `cmake ..` again to make sure that the build system adds (or removes) these files from the build specifications.
 
 ## Including Content After the Reference Section
 
