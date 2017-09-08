@@ -180,6 +180,21 @@ endfunction()
 #         EXPORT_ARCHIVE
 #         )
 #
+#
+# Deprecated command signature for backwards compatibility:
+#
+#     add_document(
+#         figures.tex
+#         SOURCES              figures.md
+#         RESOURCE_DIRS        figs
+#         PANDOC_DIRECTIVES    -t latex
+#         NO_EXPORT_PRODUCT
+#         )
+#
+# This command signature will cause an error due to a circular dependency during
+# build when the sources are at the top level directory of the project. A
+# warning is issued. The solution is to use the alternative commande signature.
+#
 function(add_document)
     set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF DIRECT_TEX_TO_PDF VERBOSE)
     set(oneValueArgs     TARGET OUTPUT_FILE PRODUCT_DIRECTORY)
@@ -189,12 +204,37 @@ function(add_document)
     # this is because `make clean` will dangerously clean up source files
     disable_insource_build()
 
+    if ("${ADD_DOCUMENT_TARGET}" STREQUAL "" AND "${ADD_DOCUMENT_OUTPUT_FILE}" STREQUAL "")
+        set(bw_comp_mode_args TRUE)
+    endif()
+
+    if(bw_comp_mode_args)
+        list(LENGTH ADD_DOCUMENT_UNPARSED_ARGUMENTS unparsed_args_num)
+        if (${unparsed_args_num} GREATER 1)
+            message(FATAL_ERROR "add_document() requires at most one target name")
+        endif()
+
+        if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+          message(WARNING "This add_document() signature does not support sources on the top level directory. \
+          It will cause a circular dependency error during build.")
+        endif()
+
+        list(GET ADD_DOCUMENT_UNPARSED_ARGUMENTS 0 ADD_DOCUMENT_TARGET)
+        set(ADD_DOCUMENT_OUTPUT_FILE ${ADD_DOCUMENT_TARGET})
+    endif()
+
     if ("${ADD_DOCUMENT_TARGET}" STREQUAL "")
         MESSAGE(FATAL_ERROR "add_document() requires a target name by using the TARGET option")
     endif()
 
     if ("${ADD_DOCUMENT_OUTPUT_FILE}" STREQUAL "")
         MESSAGE(FATAL_ERROR "add_document() requires an output file name by using the OUTPUT_FILE option")
+    endif()
+
+    if (NOT bw_comp_mode_args)
+        if ("${ADD_DOCUMENT_TARGET}" STREQUAL "${ADD_DOCUMENT_OUTPUT_FILE}")
+            message(FATAL_ERROR "Target '${ADD_DOCUMENT_TARGET}': Must different from OUTPUT_FILE")
+        endif()
     endif()
 
     set(output_file ${ADD_DOCUMENT_OUTPUT_FILE})

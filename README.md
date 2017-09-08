@@ -76,6 +76,16 @@ add_document(
 )
 ~~~
 
+Deprecated syntax for backwards compatibility:
+~~~
+add_document(
+    opus.rtf
+    SOURCES opus.md
+    PRODUCT_DIRECTORY opus_output_directory
+)
+~~~
+
+
 ## Passing Directives to "`pandoc`"
 
 You have access to the full complexity of the Pandoc compiler through the "`PANDOC_DIRECTIVES`" argument, which will pass everything to the underlying "`pandoc`" program. So, for example, to generate a PDF with some custom options:
