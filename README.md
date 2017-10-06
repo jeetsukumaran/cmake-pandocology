@@ -23,7 +23,7 @@ project/
     src/
 ~~~
 
-you might place this file "`pandocology.cmake` in "`project/cmake/Modules`", and then add a line like the following either in the top-level "`CMakeLists.txt`" or any other "`CMakeLists.txt`" processed before the commands provided by "Pandocology" are needed:
+ou might place the file "`pandocology.cmake` in "`project/cmake/Modules`", and then add a line like the following either in the top-level "`CMakeLists.txt`" or any other "`CMakeLists.txt`" processed before the commands provided by "Pandocology" are needed:
 
 ~~~
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
@@ -35,7 +35,7 @@ $ cd cmake/Modules
 $ git submodule add https://github.com/jeetsukumaran/cmake-pandocology.git
 ~~~
 
-And I added the following line to my top-level "`CMakeLists.txt`":
+Then, I added the following line to my top-level "`CMakeLists.txt`":
 
 ~~~
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/cmake-pandocology")
@@ -51,7 +51,7 @@ INCLUDE(pandocology)
 
 The primary command offered by "Pandocology" is "`add_document()`".
 
-This command takes, at a mininum, two arguments: a *target name*, which specifies the output file (and, by inspection of the extension, the output file format), and at least one source file specifed by the "`SOURCES`" argument.
+This command takes, at a mininum, three arguments: a *target name*, an *output file name* which specifies the output file (and, by inspection of the extension, the output file format), and at least one source file specifed by the "`SOURCES`" argument.
 So, for example, if you had a Markdown format input file (say, "`opus.md`") that you wanted to convert to Rich Text Format, then the following is a minimal "`CMakeLists.txt`" to do that.
 
 ~~~
@@ -59,7 +59,8 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/cmake-pandocolo
 INCLUDE(pandocology)
 
 add_document(
-    opus.rtf
+    TARGET opus
+    OUTPUT_FILE opus.rtf
     SOURCES opus.md
 )
 ~~~
@@ -68,11 +69,22 @@ Once the project is built, the result "`opus.rtf`" will end up in the "`product`
 You can change the output directory by using the "`PRODUCT_DIRECTORY`" argument:
 ~~~
 add_document(
+    TARGET opus
+    OUTPUT_FILE opus.rtf
+    SOURCES opus.md
+    PRODUCT_DIRECTORY opus_output_directory
+)
+~~~
+
+Deprecated syntax for backwards compatibility:
+~~~
+add_document(
     opus.rtf
     SOURCES opus.md
     PRODUCT_DIRECTORY opus_output_directory
 )
 ~~~
+
 
 ## Passing Directives to "`pandoc`"
 
@@ -80,7 +92,8 @@ You have access to the full complexity of the Pandoc compiler through the "`PAND
 
 ~~~
 add_document(
-    opus.pdf
+    TARGET opus
+    OUTPUT_FILE opus.pdf
     SOURCES opus.md
     PANDOC_DIRECTIVES -t latex
                       --smart
@@ -93,13 +106,14 @@ add_document(
 ## Including Static Resources
 
 In many cases your inputs are going to be more than just the primary source document: images, CSS stylesheets, BibTeX bibliography database files, stylesheets, templates etc.
-All these secondary files or inputs that are not the primary input to the "`pandoc`" program but are required to compile the main document are known as "*resources*".
+All these secondary files or inputs that are not the primary input to the "`pandoc`" program, but are required to compile the main document, are known as "*resources*".
 
 These resources can be specified on a file-by-file basis using the "`RESOURCE_FILES`" argument and on a directory-by-directory basis using the "`RESOURCE_DIRS`" argument (note that all paths are relative to the current source directory):
 
 ~~~
 add_document(
-    opus.pdf
+    TARGET opus
+    OUTPUT_FILE opus.pdf
     SOURCES opus.md
     RESOURCE_FILES references.bib custom.template.latex journal.csl
     RESOURCE_DIRS  figures/ maps/
@@ -115,7 +129,7 @@ add_document(
 )
 ~~~
 
-**IMPORTANT NOTE:** When adding resources on a directory-bases using the `RESOURCE_DIRS` argument, all the resources that are in that directory *at the time* `cmake ..` is run are added as dependencies. The CMake system does not provide a way to monitor directories for changes, only files. Thus, if you add (or remove) files from any of the directories specified by the `RESOURCE_DIRS` argument, you will have to run `cmake ..` again to make sure that the build system adds (or removes) these files from the build specifications.
+**IMPORTANT NOTE:** When adding resources on a directory-basis using the `RESOURCE_DIRS` argument, all the resources that are in that directory *at the time* `cmake` is run are added as dependencies. The CMake system does not provide a way to monitor directories for changes, only files. Thus, if you add (or remove) files from any of the directories specified by the `RESOURCE_DIRS` argument, you will have to run `cmake ..` again to make sure that the build system adds (or removes) these files from the build specifications.
 
 ## Including Content After the Reference Section
 
@@ -125,7 +139,8 @@ The work-around is to create these post-reference sections as a separate documen
 You can support this workflow using Pandocology as follows:
 ~~~
 add_document(
-    appendices.tex
+    TARGET               appendices
+    OUTPUT_FILE          appendices.tex
     SOURCES              appendices.md
     RESOURCE_DIRS        appendix-figs
     PANDOC_DIRECTIVES    -t latex
@@ -133,7 +148,8 @@ add_document(
     )
 
 add_document(
-    opus.pdf
+    TARGET              opus
+    OUTPUT_FILE         opus.pdf
     SOURCES             opus.md
     RESOURCE_FILES      references.bib custom.template.latex journal.csl
     RESOURCE_DIRS       figures/ maps/
@@ -145,7 +161,7 @@ add_document(
                         --csl          journal.csl
                         --bibliography references.bib
                         --include-after-body=appendices.tex
-    DEPENDS             appendices.tex
+    DEPENDS             appendices
     )
 ~~~
 
@@ -156,7 +172,7 @@ By specifying "`NO_EXPORT_PRODUCT`", we are suppressing the final step, and thus
 
 The second instruction builds the primary output that we are interested in, i.e., "`opus.pdf`", from the (Markdown) source "`opus.md`".
 Note how we specify the "`--include-after-body=appendices.tex`" argument to "`pandoc`", to make sure the Pandoc compiler pulls in the generated TeX file into the main document.
-In addition, we also list "`appendices.tex`" as a dependency using the "`DEPENDS`" argument.
+In addition, we also list "`appendices`" as a dependency using the "`DEPENDS`" argument.
 This results in Pandocology informing the CMake build system that "`appendices.tex`" will be used in the building of "`opus.pdf`".
 This is how we make sure that built or generated resources are available in the right place at the right time (as opposed to the "`RESOURCE_FILES`" and "`RESOURCE_DIRS`" arguments, which make sure that *static* resources get to the right places at the right time).
 Of course, as before, we make sure to specify all the static resources that this document needs (e.g. the bibliography file, the templates, the images in the "`figures/`" and "`maps/`" subdirectories).
@@ -168,7 +184,8 @@ You can do this by specifying the "`EXPORT_ARCHIVE`" flag, which will create a c
 
 ~~~
 add_document(
-    appendices.tex
+    TARGET               appendices
+    OUTPUT_FILE          appendices.tex
     SOURCES              appendices.md
     RESOURCE_DIRS        appendix-figs
     PANDOC_DIRECTIVES    -t latex
@@ -176,7 +193,8 @@ add_document(
     )
 
 add_document(
-    opus.tex
+    TARGET              opus
+    OUTPUT_FILE         opus.tex
     SOURCES             opus.md
     RESOURCE_FILES      references.bib custom.template.latex journal.csl
     RESOURCE_DIRS       figures/ maps/
@@ -188,7 +206,7 @@ add_document(
                         --csl          journal.csl
                         --bibliography references.bib
                         --include-after-body=appendices.tex
-    DEPENDS             appendices.tex
+    DEPENDS             appendices
     EXPORT_ARCHIVE
     )
 ~~~
@@ -198,7 +216,8 @@ In the above case, once run, the output directory will not only have the primary
 If you want *just* the archive (which include the primary product, i.e., "`opus.tex`" in the example above), and not the primary file to be created in the output directory, then specify "`EXPORT_ARCHIVE`" and "`NO_EXPORT_PRODUCT`" together. The former creates the archive and the latter suppresses the creation of a separate (and perhaps, for your purposes, redundant) output.
 ~~~
 add_document(
-    opus.tex
+    TARGET              opus
+    OUTPUT_FILE         opus.tex
     SOURCES             opus.md
     RESOURCE_FILES      references.bib custom.template.latex journal.csl
     RESOURCE_DIRS       figures/ maps/
@@ -210,7 +229,7 @@ add_document(
                         --csl          journal.csl
                         --bibliography references.bib
                         --include-after-body=appendices.tex
-    DEPENDS             appendices.tex
+    DEPENDS             appendices
     NO_EXPORT_PRODUCT
     EXPORT_ARCHIVE
     )
@@ -228,7 +247,8 @@ The way to do this using Pandocology is to:
 
 ~~~
 add_document(
-    appendices.tex
+    TARGET               appendices
+    OUTPUT_FILE          appendices.tex
     SOURCES              appendices.md
     RESOURCE_DIRS        appendix-figs
     PANDOC_DIRECTIVES    -t latex
@@ -236,7 +256,8 @@ add_document(
     )
 
 add_document(
-    opus.tex
+    TARGET               opus
+    OUTPUT_FILE          opus.tex
     SOURCES              opus.md
     RESOURCE_FILES       references.bib custom.template.latex journal.csl
     RESOURCE_DIRS        figs
@@ -248,7 +269,7 @@ add_document(
                         --csl          journal.csl
                         --bibliography references.bib
                         --include-after-body=appendices.tex
-    DEPENDS             appendices.tex
+    DEPENDS             appendices
     NO_EXPORT_PRODUCT
     EXPORT_ARCHIVE
     EXPORT_PDF
@@ -266,7 +287,8 @@ If you have a a TeX or a LaTeX project, and you want to generate the final PDF's
 
 ~~~
 add_document(
-    opus.pdf
+    TARGET               opus
+    OUTPUT_FILE          opus.pdf
     SOURCES              opus.tex
     RESOURCE_FILES       opus.bib figures.tex sysbio.bst
     RESOURCE_DIRS        figs
@@ -281,7 +303,8 @@ For convenience (mnemonic as much as operational), you can call the function ``a
 
 ~~~
 add_tex_document(
-    opus.pdf
+    TARGET               opus
+    OUTPUT_FILE          opus.pdf
     SOURCES              opus.tex
     RESOURCE_FILES       opus.bib figures.tex sysbio.bst
     RESOURCE_DIRS        figs
