@@ -68,6 +68,7 @@ function(pandocology_add_input_file source_path dest_dir dest_filelist_var nativ
     set(native_dest_filelist)
     file(GLOB globbed_source_paths "${source_path}")
     foreach(globbed_source_path ${globbed_source_paths})
+        get_filename_component(globbed_source_path_resolved ${globbed_source_path} ABSOLUTE)
         get_filename_component(filename ${globbed_source_path} NAME)
         get_filename_component(absolute_dest_path ${dest_dir}/${filename} ABSOLUTE)
         file(RELATIVE_PATH relative_dest_path ${CMAKE_CURRENT_BINARY_DIR} ${absolute_dest_path})
@@ -75,11 +76,13 @@ function(pandocology_add_input_file source_path dest_dir dest_filelist_var nativ
         file(TO_NATIVE_PATH ${absolute_dest_path} native_dest_path)
         list(APPEND native_dest_filelist ${native_dest_path})
         file(TO_NATIVE_PATH ${globbed_source_path} native_globbed_source_path)
-        ADD_CUSTOM_COMMAND(
-            OUTPUT ${relative_dest_path}
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${native_globbed_source_path} ${native_dest_path}
-            DEPENDS ${globbed_source_path}
-            )
+        if(NOT ${absolute_dest_path} STREQUAL ${globbed_source_path_resolved})
+            ADD_CUSTOM_COMMAND(
+                OUTPUT ${relative_dest_path}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${native_globbed_source_path} ${native_dest_path}
+                DEPENDS ${globbed_source_path}
+                )
+        endif()
         set(${dest_filelist_var} ${${dest_filelist_var}} ${dest_filelist} PARENT_SCOPE)
         set(${native_dest_filelist_var} ${${native_dest_filelist_var}} ${native_dest_filelist} PARENT_SCOPE)
     endforeach()
@@ -422,4 +425,3 @@ endfunction()
 function(add_pandoc_document)
     add_document(${ARGV})
 endfunction()
-
