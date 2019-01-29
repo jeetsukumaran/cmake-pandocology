@@ -115,10 +115,12 @@ function(pandocology_add_input_dir source_dir dest_parent_dir dir_dest_filelist_
         COMMAND ${CMAKE_COMMAND} -E make_directory ${native_absolute_dest_dir}
         DEPENDS ${source_dir}
         )
-    file(GLOB source_files "${source_dir}/*")
+    file(GLOB_RECURSE source_files "${source_dir}/*")
     foreach(source_file ${source_files})
+        file(RELATIVE_PATH relative_source_file ${source_dir} ${source_file})
         # get_filename_component(absolute_source_path ${CMAKE_CURRENT_SOURCE_DIR}/${source_file} ABSOLUTE)
-        pandocology_add_input_file(${source_file} ${absolute_dest_dir} dir_dest_filelist native_dir_dest_filelist)
+        get_filename_component(relative_source_dir ${relative_source_file} DIRECTORY)
+        pandocology_add_input_file(${source_file} ${absolute_dest_dir}/${relative_source_dir} dir_dest_filelist native_dir_dest_filelist)
     endforeach()
     set(${dir_dest_filelist_var} ${${dir_dest_filelist_var}} ${dir_dest_filelist} PARENT_SCOPE)
     set(${native_dir_dest_filelist_var} ${${native_dir_dest_filelist_var}} ${native_dir_dest_filelist} PARENT_SCOPE)
@@ -422,4 +424,3 @@ endfunction()
 function(add_pandoc_document)
     add_document(${ARGV})
 endfunction()
-
