@@ -332,6 +332,11 @@ function(add_document)
         add_to_make_clean(${output_file})
     endif()
 
+    add_custom_target (
+        ${output_file}_product
+        DEPENDS ${output_file}
+        )
+
     ## figure out what all is going to be produced by this build set, and set
     ## those as dependencies of the primary target
     set(primary_target_dependencies)
@@ -394,7 +399,7 @@ function(add_document)
     if (NOT ${ADD_DOCUMENT_NO_EXPORT_PRODUCT})
         add_custom_command(
             OUTPUT ${native_dest_output_file}
-            DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
+            DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS} ${output_file}_product
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${native_output_file} ${native_dest_output_file}
             )
         add_to_make_clean(${product_directory}/${output_file})
