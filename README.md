@@ -3,6 +3,7 @@
 "Pandocology" is a [CMake](http://www.cmake.org/) module that allows you to generate documents using [pandoc](http://johnmacfarlane.net/pandoc/).
 It is very much modeled after [UseLATEX](http://www.cmake.org/Wiki/CMakeUserUseLATEX), and is meant to make the process of going from source to final product as easy as possible, so you can focus on writing instead of compiling.
 
+To see a document sample take a took to [pandocology sample](https://github.com/vgonisanz/cmake-pandocology-sample)
 
 ## Requirements
 
@@ -13,7 +14,8 @@ It is very much modeled after [UseLATEX](http://www.cmake.org/Wiki/CMakeUserUseL
 
 ## Installation
 
-Simply place the file "`pandocology.cmake`" in a place where CMake can find it, i.e., somewhere on your CMake module path.
+Simply place the file "`pandocology.cmake`" and `cmspandoc.cmake` in a place where
+CMake can find it, i.e., somewhere on your CMake module path.
 
 For example, given a typical CMake project organized as:
 
@@ -317,4 +319,3 @@ In either case, using the direct-tex-to-PDF feature requires that:
 -   There must be only one source (though an arbitrary number of additional sources included in the main source can be specfied using the "``RESOURCE_FILES``" and "``RESOURCE_DIRS`` arguments).
 -   The source name (i.e., "``opus.tex``" in the above examples) *must* have a "``.tex``" or "``.latex``" extension, and, of course, must be in TeX or LaTeX format.
 -   The target name (i.e., "``opus.pdf``" in the above examples) *must* have a "``.pdf``" extension, and match the source name exactly except for the extension.
-
