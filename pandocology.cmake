@@ -49,6 +49,16 @@ if(NOT EXISTS ${PANDOC_EXECUTABLE})
         return()
     endif()
 endif()
+if(NOT EXISTS ${PP_EXECUTABLE})
+    find_program(PP_EXECUTABLE pp)
+    mark_as_advanced(PP_EXECUTABLE)
+    if(NOT EXISTS ${PP_EXECUTABLE})
+        message("PP not found. If this is wrong, please set cache variable PP_EXECUTABLE.")
+    endif()
+endif()
+if(NOT DEFINED ${PREPROCESS_TEMP_DIRECTORY})
+    set(PREPROCESS_TEMP_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_preprocessed")
+endif()
 
 ###############################################################################
 # Based on code from UseLATEX
@@ -198,9 +208,9 @@ endfunction()
 # warning is issued. The solution is to use the alternative commande signature.
 #
 function(add_document)
-    set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF DIRECT_TEX_TO_PDF VERBOSE)
+    set(options          EXPORT_ARCHIVE NO_EXPORT_PRODUCT EXPORT_PDF DIRECT_TEX_TO_PDF VERBOSE PREPROCESS)
     set(oneValueArgs     TARGET OUTPUT_FILE PRODUCT_DIRECTORY)
-    set(multiValueArgs   SOURCES RESOURCE_FILES RESOURCE_DIRS PANDOC_DIRECTIVES DEPENDS)
+    set(multiValueArgs   SOURCES RESOURCE_FILES RESOURCE_DIRS PANDOC_DIRECTIVES PP_DIRECTIVES DEPENDS)
     cmake_parse_arguments(ADD_DOCUMENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
     # this is because `make clean` will dangerously clean up source files
@@ -332,13 +342,47 @@ function(add_document)
         endif()
         add_to_make_clean(${output_file})
     else()
-        add_custom_command(
-            OUTPUT  ${output_file} # note that this is in the build directory
-            DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${native_product_directory}
-            COMMAND ${PANDOC_EXECUTABLE} ${native_build_sources} ${ADD_DOCUMENT_PANDOC_DIRECTIVES} -o ${native_output_file}
-            )
-        add_to_make_clean(${output_file})
+        if(${ADD_DOCUMENT_PREPROCESS})
+            if(EXISTS ${PP_EXECUTABLE})
+                message("Preprocessing documents with PP.")
+                set(PREPROCESSING_WITH_PP)
+                file(MAKE_DIRECTORY ${PREPROCESS_TEMP_DIRECTORY})
+                set(preprocessed_build_sources)
+                foreach(native_build_source ${native_build_sources})
+                    get_filename_component(native_source_name ${native_build_source} NAME)
+                    set(preprocessed_build_source "${PREPROCESS_TEMP_DIRECTORY}/${native_source_name}")
+                    set(pp_working_directory ${CMAKE_CURRENT_SOURCE_DIR})
+                    file(RELATIVE_PATH preprocessed_output_filepath ${pp_working_directory} ${preprocessed_build_source})
+                    add_custom_command(
+                        OUTPUT  ${preprocessed_build_source}
+                        DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
+                        COMMAND ${PP_EXECUTABLE} ${ADD_DOCUMENT_PP_DIRECTIVES} ${native_build_source} > ${preprocessed_output_filepath}
+                        VERBATIM
+                        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    )
+                    add_to_make_clean(${preprocessed_build_source})
+                    list(APPEND preprocessed_build_sources ${preprocessed_build_source})
+                endforeach()
+                add_custom_command(
+                OUTPUT  ${output_file} # note that this is in the build directory
+                DEPENDS ${preprocessed_build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${native_product_directory}
+                COMMAND ${PANDOC_EXECUTABLE} ${preprocessed_build_sources} ${ADD_DOCUMENT_PANDOC_DIRECTIVES} -o ${native_output_file}
+                )
+            add_to_make_clean(${output_file})
+            else()
+                message(FATAL_ERROR "PREPROCESS set but no preprocessor found!")
+                return()
+            endif()
+        else()
+            add_custom_command(
+                OUTPUT  ${output_file} # note that this is in the build directory
+                DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${native_product_directory}
+                COMMAND ${PANDOC_EXECUTABLE} ${native_build_sources} ${ADD_DOCUMENT_PANDOC_DIRECTIVES} -o ${native_output_file}
+                )
+            add_to_make_clean(${output_file})
+        endif()
     endif()
 
     add_custom_target (
