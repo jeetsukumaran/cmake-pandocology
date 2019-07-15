@@ -34,7 +34,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 In my own case, I have cloned this entire repository as a submodule of my project module:
 ~~~
 $ cd cmake/Modules
-$ git submodule add https://github.com/jeetsukumaran/cmake-pandocology.git
+$ git submodule add -b master https://github.com/jeetsukumaran/cmake-pandocology.git
 ~~~
 
 Then, I added the following line to my top-level "`CMakeLists.txt`":
