@@ -349,7 +349,7 @@ function(add_document)
                         DEPENDS ${build_sources} ${build_resources} ${ADD_DOCUMENT_DEPENDS}
                         COMMAND ${PP_EXECUTABLE} ${ADD_DOCUMENT_PP_DIRECTIVES} ${native_build_source} > ${preprocessed_output_filepath}
                         VERBATIM
-                        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                        WORKING_DIRECTORY ${pp_working_directory}
                     )
                     add_to_make_clean(${preprocessed_build_source})
                     list(APPEND preprocessed_build_sources ${preprocessed_build_source})
